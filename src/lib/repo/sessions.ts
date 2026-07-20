@@ -34,6 +34,11 @@ export function killSession(id: string): void {
   db.prepare("UPDATE app_sessions SET valid = 0 WHERE id = ?").run(id);
 }
 
+/** Revoke every session belonging to a user (e.g. on ban). */
+export function killSessionsForUser(userId: string): void {
+  db.prepare("UPDATE app_sessions SET valid = 0 WHERE user_id = ?").run(userId);
+}
+
 export function listSessionsByApp(appId: string, limit = 200): AppSession[] {
   return db
     .prepare(

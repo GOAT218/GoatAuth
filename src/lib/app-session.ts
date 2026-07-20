@@ -7,9 +7,18 @@ import { SignJWT, jwtVerify } from "jose";
 const APP_SESSION_SECONDS = 60 * 60 * 24; // 24h default session lifetime
 
 function secretKey(): Uint8Array {
-  const secret =
-    process.env.GOATAUTH_APP_TOKEN_SECRET ||
-    "goatauth-dev-app-token-secret-change-me-in-production-please";
+  const secret = process.env.GOATAUTH_APP_TOKEN_SECRET;
+  if (!secret) {
+    // A known signing key would let an attacker forge client session tokens.
+    if (process.env.NODE_ENV === "production") {
+      throw new Error(
+        "GOATAUTH_APP_TOKEN_SECRET must be set in production (see .env.example).",
+      );
+    }
+    return new TextEncoder().encode(
+      "goatauth-dev-app-token-secret-change-me-in-production-please",
+    );
+  }
   return new TextEncoder().encode(secret);
 }
 

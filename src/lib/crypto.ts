@@ -6,6 +6,14 @@ import crypto from "node:crypto";
 
 const BCRYPT_ROUNDS = 12;
 
+// A precomputed valid bcrypt hash (of a random string) used to equalize login
+// timing when the account does not exist, so response time can't be used as a
+// username-existence oracle. Compare a submitted password against this when no
+// real hash is available — it always fails, but takes the same time as a real
+// verification.
+export const DUMMY_PASSWORD_HASH =
+  "$2a$12$onB73NP9n.NRs70VMmG5/uIWWseWBJ48azWNF1.JAeoUwg.Dtq/q6";
+
 export async function hashPassword(plain: string): Promise<string> {
   return bcrypt.hash(plain, BCRYPT_ROUNDS);
 }

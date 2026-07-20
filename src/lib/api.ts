@@ -17,13 +17,13 @@ export interface ApiErr {
   code?: string;
 }
 
-export function ok<T>(data?: T, extra: Record<string, unknown> = {}): NextResponse {
+export function ok<T>(data?: T, extra: object = {}): NextResponse {
   const body: ApiOk<T> = { success: true, ...extra };
   if (data !== undefined) body.data = data;
   return NextResponse.json(body, { status: 200 });
 }
 
-export function created<T>(data?: T, extra: Record<string, unknown> = {}): NextResponse {
+export function created<T>(data?: T, extra: object = {}): NextResponse {
   const body: ApiOk<T> = { success: true, ...extra };
   if (data !== undefined) body.data = data;
   return NextResponse.json(body, { status: 201 });
@@ -85,13 +85,28 @@ export async function readJson<T = Record<string, unknown>>(req: Request): Promi
   }
 }
 
-/** Best-effort client IP extraction from proxy headers. */
+/**
+ * Client IP extraction for security-sensitive use (rate limiting, blacklist).
+ *
+ * X-Forwarded-For is a comma-separated list where each proxy APPENDS the address
+ * it received the request from. The leftmost entry is therefore client-supplied
+ * and trivially spoofable; only the entries appended by our own trusted proxies
+ * can be relied on. We take the address `GOATAUTH_TRUSTED_PROXY_HOPS` positions
+ * from the right (default 1 = a single reverse proxy in front of the app), which
+ * ignores any values the client injected further left.
+ */
 export function clientIp(req: Request): string {
+  const hops = Math.max(0, Number.parseInt(process.env.GOATAUTH_TRUSTED_PROXY_HOPS ?? "1", 10) || 0);
   const xff = req.headers.get("x-forwarded-for");
-  if (xff) return xff.split(",")[0].trim();
-  return (
-    req.headers.get("x-real-ip") ||
-    req.headers.get("cf-connecting-ip") ||
-    "0.0.0.0"
-  );
+  if (xff) {
+    const list = xff
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    if (list.length > 0) {
+      const idx = Math.min(Math.max(list.length - hops, 0), list.length - 1);
+      return list[idx];
+    }
+  }
+  return req.headers.get("x-real-ip") || req.headers.get("cf-connecting-ip") || "0.0.0.0";
 }

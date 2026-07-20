@@ -2,7 +2,7 @@
 // Route handlers stay thin: parse input, call one of these functions, return.
 
 import { ApiError } from "./api";
-import { hashPassword, safeEqual, verifyPassword } from "./crypto";
+import { DUMMY_PASSWORD_HASH, hashPassword, safeEqual, verifyPassword } from "./crypto";
 import { getAppById } from "./repo/apps";
 import { addLog } from "./repo/logs";
 import { addBlacklist, isBlacklisted } from "./repo/blacklist";
@@ -205,6 +205,9 @@ export async function loginFlow(
 
   const user = getUserByUsername(app.id, input.username);
   if (!user || !user.password_hash) {
+    // Run a dummy comparison so a missing account takes the same time as a
+    // real password check (prevents username-existence timing enumeration).
+    await verifyPassword(input.password, DUMMY_PASSWORD_HASH);
     throw new ApiError("Invalid username or password", 401, "bad_credentials");
   }
   const okPassword = await verifyPassword(input.password, user.password_hash);
@@ -308,7 +311,8 @@ export async function verifyFlow(
     throw new ApiError("Invalid session token", 401, "bad_token");
   }
   const session = getSessionById(payload.sid);
-  if (!isSessionActive(session)) {
+  // Also confirm the server-side session is bound to this app, not just the JWT.
+  if (!isSessionActive(session) || session!.app_id !== app.id) {
     throw new ApiError("Session expired or revoked", 401, "session_invalid");
   }
 
@@ -318,12 +322,19 @@ export async function verifyFlow(
   }
 
   const user = getUserById(payload.uid);
-  if (!user) throw new ApiError("Account no longer exists", 401, "no_user");
+  if (!user || user.app_id !== app.id) {
+    throw new ApiError("Account no longer exists", 401, "no_user");
+  }
 
   assertUsable(user);
-  if (app.hwid_lock && user.hwid && input.hwid && !safeEqual(user.hwid, input.hwid)) {
-    killSession(payload.sid);
-    throw new ApiError("Hardware ID mismatch — reset required", 403, "hwid_mismatch");
+  // Enforce the HWID lock on revalidation: when the lock is on and the user is
+  // bound to a machine, the client MUST present a matching HWID. Omitting it is
+  // rejected (otherwise a stolen token could be replayed from another machine).
+  if (app.hwid_lock && user.hwid) {
+    if (!input.hwid || !safeEqual(user.hwid, input.hwid)) {
+      killSession(payload.sid);
+      throw new ApiError("Hardware ID mismatch — reset required", 403, "hwid_mismatch");
+    }
   }
 
   return { token: input.token, session_id: payload.sid, user: userInfo(user), version: versionInfo(app) };
@@ -357,9 +368,21 @@ export async function readVariable(
   if (v.secret) {
     const payload = input.token ? await verifyAppToken(input.token) : null;
     const session = payload ? getSessionById(payload.sid) : null;
-    if (!payload || payload.app !== app.id || !isSessionActive(session) || !payload.uid) {
+    if (
+      !payload ||
+      payload.app !== app.id ||
+      !isSessionActive(session) ||
+      session!.app_id !== app.id ||
+      !payload.uid
+    ) {
       throw new ApiError("A valid authenticated session is required", 401, "auth_required");
     }
+    // Re-check the account is still allowed — sessions outlive ban/expiry.
+    const user = getUserById(payload.uid);
+    if (!user || user.app_id !== app.id) {
+      throw new ApiError("A valid authenticated session is required", 401, "auth_required");
+    }
+    assertUsable(user); // throws for banned or expired users
   }
   return v.value;
 }

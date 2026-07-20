@@ -136,3 +136,11 @@ export function toPublicSeller(s: Seller): PublicSeller {
     last_login_at: s.last_login_at,
   };
 }
+
+// AppUser without the password hash — safe to send to the dashboard client.
+export type PublicAppUser = Omit<AppUser, "password_hash">;
+
+export function toPublicAppUser(u: AppUser): PublicAppUser {
+  const { password_hash: _omit, ...rest } = u;
+  return rest;
+}
