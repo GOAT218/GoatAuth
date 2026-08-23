@@ -89,6 +89,7 @@ Library.CurrentLanguage = 'English'
 Library.ToggleStyle = 'Modern' -- 'Modern' or 'Classic'
 Library.TranslationCache = {} -- Cache for API translations
 Library.UseAPIFallback = true -- Enable API translation for unknown terms
+Library.TranslatableElements = {} -- Track all elements that need translation
 
 -- Language code mapping for Lingva API
 Library.LanguageCodes = {
@@ -660,6 +661,28 @@ function Library:Translate(key)
     return key
 end
 
+-- Register a text element for live translation updates
+function Library:RegisterTranslatableText(textInstance, translationKey)
+    if not textInstance or not translationKey then return end
+    
+    table.insert(self.TranslatableElements, {
+        Instance = textInstance,
+        Key = translationKey,
+    })
+    
+    -- Set initial translation
+    textInstance.Text = self:Translate(translationKey)
+end
+
+-- Update all translatable elements when language changes
+function Library:UpdateAllTranslations()
+    for _, element in ipairs(self.TranslatableElements) do
+        if element.Instance and element.Instance.Parent then
+            element.Instance.Text = self:Translate(element.Key)
+        end
+    end
+end
+
 function Library:TranslateViaAPI(text, targetLanguage)
     -- Get language code
     local targetCode = self.LanguageCodes[targetLanguage]
@@ -698,7 +721,16 @@ end
 function Library:SetLanguage(language)
     if self.Translations[language] then
         self.CurrentLanguage = language
-        -- Trigger UI update if needed
+        
+        -- Update all existing translatable text LIVE
+        self:UpdateAllTranslations()
+        
+        -- Notify user
+        if self.Notify then
+            self:Notify('Language: ' .. language, 2)
+        end
+        
+        -- Trigger callback if set
         if self.OnLanguageChanged then
             self:OnLanguageChanged()
         end
@@ -708,7 +740,13 @@ end
 function Library:SetToggleStyle(style)
     if style == 'Modern' or style == 'Classic' then
         self.ToggleStyle = style
-        -- Trigger UI update for existing toggles if needed
+        
+        -- Notify user that only new toggles will use this style
+        if self.Notify then
+            self:Notify('Toggle Style: ' .. style, 2)
+        end
+        
+        -- Trigger callback if set
         if self.OnToggleStyleChanged then
             self:OnToggleStyleChanged()
         end
@@ -2207,16 +2245,19 @@ do
         local TextLabel = Library:CreateLabel({
             Size = UDim2.new(1, -4, 0, 15),
             TextSize = 14,
-            Text = Text,
+            Text = Library:Translate(Text),
             TextWrapped = DoesWrap or false,
             TextXAlignment = Enum.TextXAlignment.Left,
             ZIndex = 5,
             Parent = Container,
         });
 
+        -- Register for live translation
+        Library:RegisterTranslatableText(TextLabel, Text)
+
         if DoesWrap then
             local Y = select(2,
-                Library:GetTextBounds(Text, Library.Font, 14, Vector2.new(TextLabel.AbsoluteSize.X, math.huge)))
+                Library:GetTextBounds(Library:Translate(Text), Library.Font, 14, Vector2.new(TextLabel.AbsoluteSize.X, math.huge)))
             TextLabel.Size = UDim2.new(1, -4, 0, Y)
         else
             Library:Create('UIListLayout', {
@@ -2232,11 +2273,11 @@ do
         Label.Container = Container;
 
         function Label:SetText(Text)
-            TextLabel.Text = Text
+            TextLabel.Text = Library:Translate(Text)
 
             if DoesWrap then
                 local Y = select(2,
-                    Library:GetTextBounds(Text, Library.Font, 14, Vector2.new(TextLabel.AbsoluteSize.X, math.huge)))
+                    Library:GetTextBounds(Library:Translate(Text), Library.Font, 14, Vector2.new(TextLabel.AbsoluteSize.X, math.huge)))
                 TextLabel.Size = UDim2.new(1, -4, 0, Y)
             end
 
@@ -2814,11 +2855,14 @@ do
                 Size = UDim2.new(0, 216, 1, 0),
                 Position = UDim2.new(1, 6, 0, 0),
                 TextSize = 14,
-                Text = Info.Text,
+                Text = Library:Translate(Info.Text),
                 TextXAlignment = Enum.TextXAlignment.Left,
                 ZIndex = 6,
                 Parent = ToggleInner,
             });
+
+            -- Register for live translation
+            Library:RegisterTranslatableText(ToggleLabel, Info.Text)
 
             Library:Create('UIListLayout', {
                 Padding = UDim.new(0, 4),
@@ -2840,12 +2884,15 @@ do
             ToggleLabel = Library:CreateLabel({
                 Size = UDim2.new(1, -40, 1, 0),
                 TextSize = 14,
-                Text = Info.Text,
+                Text = Library:Translate(Info.Text),
                 TextTransparency = 0.4,
                 TextXAlignment = Enum.TextXAlignment.Left,
                 ZIndex = 5,
                 Parent = Button,
             });
+
+            -- Register for live translation
+            Library:RegisterTranslatableText(ToggleLabel, Info.Text)
 
             Library:Create('UIListLayout', {
                 Padding = UDim.new(0, 4),
