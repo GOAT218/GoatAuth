@@ -4516,11 +4516,12 @@ function Library:CreateWindow(...)
 
                         Cursor.Color = Library.AccentColor;
 
-                        -- Proper mouse cursor arrow shape (smaller with stem)
-                        local size = 12
-                        Cursor.PointA = Vector2.new(mPos.X, mPos.Y);  -- tip
-                        Cursor.PointB = Vector2.new(mPos.X + size * 0.5, mPos.Y + size * 0.7);  -- right edge
-                        Cursor.PointC = Vector2.new(mPos.X, mPos.Y + size * 0.9);  -- bottom center (stem)
+                        -- Proper mouse cursor arrow shape (larger with clear stem)
+                        local size = 18
+                        local stemWidth = 3
+                        Cursor.PointA = Vector2.new(mPos.X, mPos.Y);  -- tip (top)
+                        Cursor.PointB = Vector2.new(mPos.X + size * 0.6, mPos.Y + size * 0.55);  -- right edge
+                        Cursor.PointC = Vector2.new(mPos.X + stemWidth, mPos.Y + size);  -- bottom right of stem
 
                         CursorOutline.PointA = Cursor.PointA;
                         CursorOutline.PointB = Cursor.PointB;
