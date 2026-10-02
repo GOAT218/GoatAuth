@@ -471,6 +471,12 @@ end;
 
 Library.AccentColorDark = Library:GetDarkerColor(Library.AccentColor);
 
+function Library:SetAccentColor(Color)
+    Library.AccentColor = Color;
+    Library.AccentColorDark = Library:GetDarkerColor(Color);
+    Library:UpdateColorsUsingRegistry();
+end;
+
 function Library:AddToRegistry(Instance, Properties, IsHud)
     local Idx = #Library.Registry + 1;
     local Data = {
