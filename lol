@@ -64,7 +64,7 @@ local Library = {
     FontColor = Color3.fromRGB(255, 255, 255);
     MainColor = Color3.fromRGB(28, 28, 28);
     BackgroundColor = Color3.fromRGB(20, 20, 20);
-    AccentColor = Color3.fromRGB(0, 85, 255);
+    AccentColor = Color3.fromRGB(255, 255, 255);
     OutlineColor = Color3.fromRGB(50, 50, 50);
     RiskColor = Color3.fromRGB(255, 50, 50),
 
@@ -4516,9 +4516,11 @@ function Library:CreateWindow(...)
 
                         Cursor.Color = Library.AccentColor;
 
-                        Cursor.PointA = Vector2.new(mPos.X, mPos.Y);
-                        Cursor.PointB = Vector2.new(mPos.X + 16, mPos.Y + 6);
-                        Cursor.PointC = Vector2.new(mPos.X + 6, mPos.Y + 16);
+                        -- Proper mouse cursor arrow shape (smaller with stem)
+                        local size = 12
+                        Cursor.PointA = Vector2.new(mPos.X, mPos.Y);  -- tip
+                        Cursor.PointB = Vector2.new(mPos.X + size * 0.5, mPos.Y + size * 0.7);  -- right edge
+                        Cursor.PointC = Vector2.new(mPos.X, mPos.Y + size * 0.9);  -- bottom center (stem)
 
                         CursorOutline.PointA = Cursor.PointA;
                         CursorOutline.PointB = Cursor.PointB;
