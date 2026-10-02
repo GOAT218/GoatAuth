@@ -2100,7 +2100,6 @@ do
         local Toggle = {
             Value = Info.Default or false;
             Type = 'Toggle';
-            Variant = 'Switch';
 
             Callback = Info.Callback or function(Value) end;
             Addons = {},
@@ -2110,45 +2109,77 @@ do
         local Groupbox = self;
         local Container = Groupbox.Container;
 
-        -- Define functions BEFORE using them
+        -- OLD STYLE (13x13 square on the left) - matching old library exactly
+        local ToggleOuter = Library:Create('Frame', {
+            BackgroundColor3 = Color3.new(0, 0, 0);
+            BorderColor3 = Color3.new(0, 0, 0);
+            Size = UDim2.new(0, 13, 0, 13);
+            ZIndex = 5;
+            Parent = Container;
+        });
+
+        Library:AddToRegistry(ToggleOuter, {
+            BorderColor3 = 'Black';
+        });
+
+        local ToggleInner = Library:Create('Frame', {
+            BackgroundColor3 = Library.MainColor;
+            BorderColor3 = Library.OutlineColor;
+            BorderMode = Enum.BorderMode.Inset;
+            Size = UDim2.new(1, 0, 1, 0);
+            ZIndex = 6;
+            Parent = ToggleOuter;
+        });
+
+        Library:AddToRegistry(ToggleInner, {
+            BackgroundColor3 = 'MainColor';
+            BorderColor3 = 'OutlineColor';
+        });
+
+        local ToggleLabel = Library:CreateLabel({
+            Size = UDim2.new(0, 216, 1, 0);
+            Position = UDim2.new(1, 6, 0, 0);
+            TextSize = 14;
+            Text = Info.Text;
+            TextXAlignment = Enum.TextXAlignment.Left;
+            ZIndex = 6;
+            Parent = ToggleInner;
+        });
+
+        Library:Create('UIListLayout', {
+            Padding = UDim.new(0, 4);
+            FillDirection = Enum.FillDirection.Horizontal;
+            HorizontalAlignment = Enum.HorizontalAlignment.Right;
+            SortOrder = Enum.SortOrder.LayoutOrder;
+            Parent = ToggleLabel;
+        });
+
+        local ToggleRegion = Library:Create('Frame', {
+            BackgroundTransparency = 1;
+            Size = UDim2.new(0, 170, 1, 0);
+            ZIndex = 8;
+            Parent = ToggleOuter;
+        });
+
+        Library:OnHighlight(ToggleRegion, ToggleOuter,
+            { BorderColor3 = 'AccentColor' },
+            { BorderColor3 = 'Black' }
+        );
+
+        if type(Info.Tooltip) == 'string' then
+            Library:AddToolTip(Info.Tooltip, ToggleRegion)
+        end
+
         function Toggle:UpdateColors()
             Toggle:Display();
         end;
 
         function Toggle:Display()
-            local useOldStyle = Library.ToggleStyle == 'Old'
-            
-            if useOldStyle then
-                if Toggle._ToggleInner then
-                    Toggle._ToggleInner.BackgroundColor3 = Toggle.Value and Library.AccentColor or Library.MainColor;
-                    Toggle._ToggleInner.BorderColor3 = Toggle.Value and Library.AccentColorDark or Library.OutlineColor;
+            ToggleInner.BackgroundColor3 = Toggle.Value and Library.AccentColor or Library.MainColor;
+            ToggleInner.BorderColor3 = Toggle.Value and Library.AccentColorDark or Library.OutlineColor;
 
-                    if Library.RegistryMap[Toggle._ToggleInner] then
-                        Library.RegistryMap[Toggle._ToggleInner].Properties.BackgroundColor3 = Toggle.Value and 'AccentColor' or 'MainColor';
-                        Library.RegistryMap[Toggle._ToggleInner].Properties.BorderColor3 = Toggle.Value and 'AccentColorDark' or 'OutlineColor';
-                    end
-                end
-            else
-                if Toggle._Switch then
-                    Toggle._Switch.BackgroundColor3 = Toggle.Value and Library.AccentColor or Library.MainColor;
-                    Toggle._SwitchStroke.Color = Toggle.Value and Library.AccentColor or Library.OutlineColor;
-
-                    if Library.RegistryMap[Toggle._Switch] then
-                        Library.RegistryMap[Toggle._Switch].Properties.BackgroundColor3 = Toggle.Value and 'AccentColor' or 'MainColor';
-                        Library.RegistryMap[Toggle._SwitchStroke].Properties.Color = Toggle.Value and 'AccentColor' or 'OutlineColor';
-                    end
-
-                    TweenService:Create(Toggle._ToggleLabel, Library.TweenInfo, {
-                        TextTransparency = Toggle.Value and 0 or 0.4;
-                    }):Play();
-                    
-                    local Offset = Toggle.Value and 1 or 0;
-                    TweenService:Create(Toggle._Ball, Library.TweenInfo, {
-                        AnchorPoint = Vector2.new(Offset, 0);
-                        Position = UDim2.fromScale(Offset, 0);
-                    }):Play();
-                end
-            end
+            Library.RegistryMap[ToggleInner].Properties.BackgroundColor3 = Toggle.Value and 'AccentColor' or 'MainColor';
+            Library.RegistryMap[ToggleInner].Properties.BorderColor3 = Toggle.Value and 'AccentColorDark' or 'OutlineColor';
         end;
 
         function Toggle:OnChanged(Func)
@@ -2173,224 +2204,32 @@ do
             Library:SafeCallback(Toggle.Changed, Toggle.Value);
             Library:UpdateDependencyBoxes();
         end;
-        
-        local function RenderToggle()
-            -- Clear old children
-            for _, child in next, Container:GetChildren() do
-                if child.Name == 'ToggleOuter' or child.Name == 'ToggleButton' then
-                    child:Destroy()
-                end
-            end
 
-            -- Choose between old (square) and modern (switch) toggle style
-            local useOldStyle = Library.ToggleStyle == 'Old'
-
-            if useOldStyle then
-                -- OLD STYLE (13x13 square on the left) - matching old library exactly
-                local ToggleOuter = Library:Create('Frame', {
-                    Name = 'ToggleOuter';
-                    BackgroundColor3 = Color3.new(0, 0, 0);
-                    BorderColor3 = Color3.new(0, 0, 0);
-                    Size = UDim2.new(0, 13, 0, 13);
-                    ZIndex = 5;
-                    Parent = Container;
-                });
-
-                Library:AddToRegistry(ToggleOuter, {
-                    BorderColor3 = 'Black';
-                });
-
-                local ToggleInner = Library:Create('Frame', {
-                    BackgroundColor3 = Library.MainColor;
-                    BorderColor3 = Library.OutlineColor;
-                    BorderMode = Enum.BorderMode.Inset;
-                    Size = UDim2.new(1, 0, 1, 0);
-                    ZIndex = 6;
-                    Parent = ToggleOuter;
-                });
-
-                Library:AddToRegistry(ToggleInner, {
-                    BackgroundColor3 = 'MainColor';
-                    BorderColor3 = 'OutlineColor';
-                });
-
-                local ToggleLabel = Library:CreateLabel({
-                    Size = UDim2.new(0, 216, 1, 0);
-                    Position = UDim2.new(1, 6, 0, 0);
-                    TextSize = 14;
-                    Text = Info.Text;
-                    TextXAlignment = Enum.TextXAlignment.Left;
-                    ZIndex = 6;
-                    Parent = ToggleInner;
-                });
-
-                Library:Create('UIListLayout', {
-                    Padding = UDim.new(0, 4);
-                    FillDirection = Enum.FillDirection.Horizontal;
-                    HorizontalAlignment = Enum.HorizontalAlignment.Right;
-                    SortOrder = Enum.SortOrder.LayoutOrder;
-                    Parent = ToggleLabel;
-                });
-
-                local ToggleRegion = Library:Create('Frame', {
-                    BackgroundTransparency = 1;
-                    Size = UDim2.new(0, 170, 1, 0);
-                    ZIndex = 8;
-                    Parent = ToggleOuter;
-                });
-
-                Library:OnHighlight(ToggleRegion, ToggleOuter,
-                    { BorderColor3 = 'AccentColor' },
-                    { BorderColor3 = 'Black' }
-                );
-
-                if type(Info.Tooltip) == 'string' then
-                    Library:AddToolTip(Info.Tooltip, ToggleRegion)
-                end
-
-                ToggleRegion.InputBegan:Connect(function(Input)
-                    if Input.UserInputType == Enum.UserInputType.MouseButton1 and not Library:MouseIsOverOpenedFrame() then
-                        Toggle:SetValue(not Toggle.Value)
-                        Library:AttemptSave();
-                    end;
-                end);
-
-                Toggle._ToggleInner = ToggleInner
-                Toggle._ToggleLabel = ToggleLabel
-                Toggle._ToggleOuter = ToggleOuter
-
-            else
-                -- MODERN STYLE (32x18 switch on the right)
-                local Button = Library:Create('TextButton', {
-                    Name = 'ToggleButton';
-                    BackgroundTransparency = 1;
-                    Size = UDim2.new(1, 0, 0, 18);
-                    Text = '';
-                    ZIndex = 5;
-                    Parent = Container;
-                });
-
-                local ToggleLabel = Library:CreateLabel({
-                    Size = UDim2.new(1, -40, 1, 0);
-                    TextSize = 14;
-                    Text = Info.Text;
-                    TextTransparency = 0.4;
-                    TextXAlignment = Enum.TextXAlignment.Left;
-                    ZIndex = 5;
-                    Parent = Button;
-                });
-
-                Library:Create('UIListLayout', {
-                    Padding = UDim.new(0, 4);
-                    FillDirection = Enum.FillDirection.Horizontal;
-                    HorizontalAlignment = Enum.HorizontalAlignment.Right;
-                    SortOrder = Enum.SortOrder.LayoutOrder;
-                    Parent = ToggleLabel;
-                });
-
-                local SwitchOuter = Library:Create('Frame', {
-                    AnchorPoint = Vector2.new(1, 0);
-                    BackgroundColor3 = Color3.new(0, 0, 0);
-                    BorderColor3 = Color3.new(0, 0, 0);
-                    Position = UDim2.new(1, -4, 0, 0);
-                    Size = UDim2.fromOffset(32, 18);
-                    ZIndex = 5;
-                    Parent = Button;
-                });
-
-                local Switch = Library:Create('Frame', {
-                    BackgroundColor3 = Library.MainColor;
-                    BorderColor3 = Library.OutlineColor;
-                    BorderMode = Enum.BorderMode.Inset;
-                    Size = UDim2.new(1, 0, 1, 0);
-                    ZIndex = 6;
-                    Parent = SwitchOuter;
-                });
-
-                Library:Create('UICorner', {
-                    CornerRadius = UDim.new(1, 0);
-                    Parent = Switch;
-                });
-
-                Library:Create('UIPadding', {
-                    PaddingBottom = UDim.new(0, 2);
-                    PaddingLeft = UDim.new(0, 2);
-                    PaddingRight = UDim.new(0, 2);
-                    PaddingTop = UDim.new(0, 2);
-                    Parent = Switch;
-                });
-
-                local SwitchStroke = Library:Create('UIStroke', {
-                    Color = Library.OutlineColor;
-                    Thickness = 1;
-                    Parent = Switch;
-                });
-
-                local Ball = Library:Create('Frame', {
-                    BackgroundColor3 = Library.FontColor;
-                    Size = UDim2.fromScale(1, 1);
-                    SizeConstraint = Enum.SizeConstraint.RelativeYY;
-                    ZIndex = 6;
-                    Parent = Switch;
-                });
-
-                Library:Create('UICorner', {
-                    CornerRadius = UDim.new(1, 0);
-                    Parent = Ball;
-                });
-
-                Library:AddToRegistry(Switch, {
-                    BackgroundColor3 = 'MainColor';
-                });
-                Library:AddToRegistry(SwitchStroke, {
-                    Color = 'OutlineColor';
-                });
-                Library:AddToRegistry(Ball, {
-                    BackgroundColor3 = 'FontColor';
-                });
-
-                if type(Info.Tooltip) == 'string' then
-                    Library:AddToolTip(Info.Tooltip, Button)
-                end
-
-                Button.Activated:Connect(function()
-                    Toggle:SetValue(not Toggle.Value)
-                    Library:AttemptSave();
-                end);
-
-                Toggle._Switch = Switch
-                Toggle._SwitchOuter = SwitchOuter
-                Toggle._SwitchStroke = SwitchStroke
-                Toggle._Ball = Ball
-                Toggle._ToggleLabel = ToggleLabel
-                Toggle._ToggleButton = Button
-            end
-            
-            Toggle:Display()
-        end
-
-        RenderToggle()
+        ToggleRegion.InputBegan:Connect(function(Input)
+            if Input.UserInputType == Enum.UserInputType.MouseButton1 and not Library:MouseIsOverOpenedFrame() then
+                Toggle:SetValue(not Toggle.Value)
+                Library:AttemptSave();
+            end;
+        end);
 
         if Toggle.Risky then
-            Library:RemoveFromRegistry(Toggle._ToggleLabel)
-            Toggle._ToggleLabel.TextColor3 = Library.RiskColor
-            Library:AddToRegistry(Toggle._ToggleLabel, { TextColor3 = 'RiskColor' })
+            Library:RemoveFromRegistry(ToggleLabel)
+            ToggleLabel.TextColor3 = Library.RiskColor
+            Library:AddToRegistry(ToggleLabel, { TextColor3 = 'RiskColor' })
         end
 
+        Toggle:Display();
         Groupbox:AddBlank(Info.BlankSize or 5 + 2);
         Groupbox:Resize();
 
-        Toggle.TextLabel = Toggle._ToggleLabel
+        Toggle.TextLabel = ToggleLabel;
         Toggle.Container = Container;
+        Toggle._ToggleInner = ToggleInner;
+        Toggle._ToggleLabel = ToggleLabel;
+        Toggle._ToggleOuter = ToggleOuter;
         setmetatable(Toggle, BaseAddons);
 
         Toggles[Idx] = Toggle;
-
-        -- Store a reference to rebuild when style changes
-        if not Library._TogglesList then
-            Library._TogglesList = {}
-        end
-        table.insert(Library._TogglesList, { Toggle = Toggle, RenderToggle = RenderToggle })
 
         Library:UpdateDependencyBoxes();
 
