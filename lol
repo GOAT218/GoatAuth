@@ -25,7 +25,7 @@ else
     isMobile = (devicePlatform == Enum.Platform.Android or devicePlatform == Enum.Platform.IOS)
 end
 
-originalMinSize = isMobile and Vector2.new(480, 240) or Vector2.new(480, 360)
+originalMinSize = isMobile and Vector2.new(400, 240) or Vector2.new(480, 360)
 
 local function IsMobile()
     return isMobile
@@ -3271,9 +3271,9 @@ function Library:CreateWindow(...)
     if type(Config.MenuFadeTime) ~= 'number' then Config.MenuFadeTime = 0.2 end
 
     if typeof(Config.Position) ~= 'UDim2' then Config.Position = UDim2.fromOffset(175, 50) end
-    if typeof(Config.Size) ~= 'UDim2' then Config.Size = IsMobile() and UDim2.fromOffset(480, 240) or UDim2.fromOffset(550, 600) end
-    if type(Config.MinSize) ~= 'Vector2' then Config.MinSize = IsMobile() and Vector2.new(480, 240) or Vector2.new(380, 320) end
-    if type(Config.MaxSize) ~= 'Vector2' then Config.MaxSize = IsMobile() and Vector2.new(480, 240) or Vector2.new(900, 900) end
+    if typeof(Config.Size) ~= 'UDim2' then Config.Size = IsMobile() and UDim2.fromOffset(560, 340) or UDim2.fromOffset(550, 600) end
+    if type(Config.MinSize) ~= 'Vector2' then Config.MinSize = IsMobile() and Vector2.new(400, 240) or Vector2.new(380, 320) end
+    if type(Config.MaxSize) ~= 'Vector2' then Config.MaxSize = IsMobile() and Vector2.new(900, 900) or Vector2.new(900, 900) end
 
     if Config.Center then
         Config.AnchorPoint = Vector2.new(0.5, 0.5)
@@ -3347,24 +3347,24 @@ function Library:CreateWindow(...)
     Library:MakeDraggable(Outer, 25);
 
     do
-        local ResizeHitSize = IsMobileDevice and 42 or 26
+        local ResizeHitSize = IsMobileDevice and 56 or 26
         local ResizeIconSize = 26
         local ResizeHandle = Library:Create('Frame', {
             Name = 'ResizeHandle',
-            AnchorPoint = Vector2.new(0.5, 0.5),
+            AnchorPoint = Vector2.new(1, 1),
             BackgroundTransparency = 1,
-            Position = UDim2.new(1, 3, 1, 3),
-            Size = UDim2.fromOffset(32, 32),
+            Position = UDim2.new(1, 0, 1, 0),
+            Size = IsMobileDevice and UDim2.fromOffset(56, 56) or UDim2.fromOffset(32, 32),
             ZIndex = 250,
             Parent = Outer,
         });
 
         local ResizeIcon = Library:Create('ImageLabel', {
-            AnchorPoint = Vector2.new(0.5, 0.5),
+            AnchorPoint = Vector2.new(1, 1),
             BackgroundTransparency = 1,
             Image = 'rbxassetid://120997033468887',
             ImageTransparency = 0.5;
-            Position = UDim2.new(0.5, -16, 0.5, -16),
+            Position = UDim2.new(1, 0, 1, 0),
             Size = UDim2.fromOffset(96, 96),
             ZIndex = 251,
             Parent = ResizeHandle,
@@ -3458,34 +3458,36 @@ function Library:CreateWindow(...)
             local startPointer = getPointerPos(Input)
             local startSize = getOuterBaseSize()
             local scaleFactor = getOuterScale()
-            local dragThreshold = Input.UserInputType == Enum.UserInputType.Touch and 2 or 0
 
             if Input.UserInputType == Enum.UserInputType.MouseButton1 then
                 while InputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) do
                     local now = getPointerPos(Input)
                     local delta = now - startPointer
-                    if delta.Magnitude < dragThreshold then
-                        RenderStepped:Wait()
-                        continue
-                    end
                     local scaledDelta = Vector2.new(delta.X / scaleFactor, delta.Y / scaleFactor)
                     local newSize = clampSize(Vector2.new(startSize.X + scaledDelta.X, startSize.Y + scaledDelta.Y))
                     Outer.Size = UDim2.fromOffset(newSize.X, newSize.Y)
                     RenderStepped:Wait()
                 end
             else
-                while (Input.UserInputState ~= Enum.UserInputState.End) and (not Library.Unloaded) do
-                    local now = getPointerPos(Input)
-                    local delta = now - startPointer
-                    if delta.Magnitude < dragThreshold then
-                        RenderStepped:Wait()
-                        continue
+                -- Touch: track the live position via InputChanged
+                local currentTouchPos = Input.Position
+
+                local touchConn
+                touchConn = InputService.InputChanged:Connect(function(Changed)
+                    if Changed == Input then
+                        currentTouchPos = Changed.Position
                     end
+                end)
+
+                while (Input.UserInputState ~= Enum.UserInputState.End) and (not Library.Unloaded) do
+                    local delta = currentTouchPos - startPointer
                     local scaledDelta = Vector2.new(delta.X / scaleFactor, delta.Y / scaleFactor)
                     local newSize = clampSize(Vector2.new(startSize.X + scaledDelta.X, startSize.Y + scaledDelta.Y))
                     Outer.Size = UDim2.fromOffset(newSize.X, newSize.Y)
                     RenderStepped:Wait()
                 end
+
+                touchConn:Disconnect()
             end
         end)
     end
