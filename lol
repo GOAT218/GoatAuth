@@ -3360,11 +3360,11 @@ function Library:CreateWindow(...)
         });
 
         local ResizeIcon = Library:Create('ImageLabel', {
-            AnchorPoint = Vector2.new(1, 1),
+            AnchorPoint = Vector2.new(0.5, 0.5),
             BackgroundTransparency = 1,
             Image = 'rbxassetid://120997033468887',
             ImageTransparency = 0.5;
-            Position = UDim2.new(1, 0, 1, 0),
+            Position = UDim2.new(0.5, 0, 0.5, 0),
             Size = UDim2.fromOffset(96, 96),
             ZIndex = 251,
             Parent = ResizeHandle,
