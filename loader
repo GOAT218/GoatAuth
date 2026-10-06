@@ -21,7 +21,7 @@ local Scripts = {
     [97314177]   = "89066052075251198843", -- NinjaTycoon
     [5200655965] = "05018654462611029174", -- Project Smash
     -- [GAMEID_HERE] = "43582573096609583474", -- Tactical Swat
-    -- [GAMEID_HERE] = "81982446223044293233"  -- Skywars
+    [3258873704] = "81982446223044293233"  -- Skywars
 }
 
 local function LoadScript()
