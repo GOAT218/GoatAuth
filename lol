@@ -25,7 +25,7 @@ else
     isMobile = (devicePlatform == Enum.Platform.Android or devicePlatform == Enum.Platform.IOS)
 end
 
-originalMinSize = isMobile and Vector2.new(480, 240) or Vector2.new(480, 360)
+originalMinSize = isMobile and Vector2.new(550, 600) or Vector2.new(480, 360)
 
 local function IsMobile()
     return isMobile
@@ -3271,9 +3271,9 @@ function Library:CreateWindow(...)
     if type(Config.MenuFadeTime) ~= 'number' then Config.MenuFadeTime = 0.2 end
 
     if typeof(Config.Position) ~= 'UDim2' then Config.Position = UDim2.fromOffset(175, 50) end
-    if typeof(Config.Size) ~= 'UDim2' then Config.Size = IsMobile() and UDim2.fromOffset(480, 240) or UDim2.fromOffset(550, 600) end
-    if type(Config.MinSize) ~= 'Vector2' then Config.MinSize = IsMobile() and Vector2.new(480, 240) or Vector2.new(380, 320) end
-    if type(Config.MaxSize) ~= 'Vector2' then Config.MaxSize = IsMobile() and Vector2.new(480, 240) or Vector2.new(900, 900) end
+    if typeof(Config.Size) ~= 'UDim2' then Config.Size = UDim2.fromOffset(550, 600) end
+    if type(Config.MinSize) ~= 'Vector2' then Config.MinSize = IsMobile() and Vector2.new(320, 240) or Vector2.new(380, 320) end
+    if type(Config.MaxSize) ~= 'Vector2' then Config.MaxSize = Vector2.new(900, 900) end
 
     if Config.Center then
         Config.AnchorPoint = Vector2.new(0.5, 0.5)
@@ -3409,12 +3409,10 @@ function Library:CreateWindow(...)
         end)
 
         local function getPointerPos(input)
-
-
-            if input and input.UserInputType == Enum.UserInputType.Touch then
-                return input.Position
-            end
-            return Vector2.new(Mouse.X, Mouse.Y)
+            -- On both mouse and touch, GetMouseLocation() tracks the live position.
+            -- input.Position only captures the position at InputBegan for touch events,
+            -- so we always use GetMouseLocation for the live drag position.
+            return InputService:GetMouseLocation()
         end
 
         local function clampSize(v)
