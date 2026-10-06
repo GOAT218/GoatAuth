@@ -3351,9 +3351,9 @@ function Library:CreateWindow(...)
         local ResizeIconSize = 26
         local ResizeHandle = Library:Create('Frame', {
             Name = 'ResizeHandle',
-            AnchorPoint = Vector2.new(0.5, 0.5),
+            AnchorPoint = Vector2.new(1, 1),
             BackgroundTransparency = 1,
-            Position = UDim2.new(1, 3, 1, 3),
+            Position = UDim2.new(1, 0, 1, 0),
             Size = IsMobileDevice and UDim2.fromOffset(56, 56) or UDim2.fromOffset(32, 32),
             ZIndex = 250,
             Parent = Outer,
