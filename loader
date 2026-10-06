@@ -1,6 +1,5 @@
 local prefix = ""
 
--- Check if user has lp_key and add to prefix
 if lp_key then
     prefix = "local lp_key = '" .. lp_key .. "'\n"
 end
@@ -34,7 +33,6 @@ local function LoadScript()
         print("Game ID: " .. GameId)
         print("Script ID: " .. scriptId)
         
-        -- Try to load SDK
         local sdkSuccess, sdk = pcall(function()
             return loadstring(game:HttpGet("https://sdk.luaprot.net/"))()
         end)
@@ -52,7 +50,6 @@ local function LoadScript()
         return true
     else
         warn("Failed to load script: " .. tostring(result))
-        -- Print the full error for debugging
         print("Full error: " .. tostring(result))
         return false
     end
