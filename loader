@@ -30,17 +30,39 @@ local function LoadScript()
     end
     
     local success, result = pcall(function()
+        -- Initialize loader
+        print("Initializing LuaProt loader...")
+        
         local sdk = loadstring(game:HttpGet("https://sdk.luaprot.net/"))()
         sdk.scriptId = scriptId
+        
+        -- Dashboard status
+        if LP_DASHBOARD then
+            LP_DASHBOARD:Fire("LoaderStatus", "Loading script...")
+        end
+        
+        -- Load the script
         return sdk:loadScript()
     end)
     
     if success then
         print("Successfully loaded script for game: " .. GameId)
         print("Script ID: " .. scriptId)
+        
+        -- Dashboard success
+        if LP_DASHBOARD then
+            LP_DASHBOARD:Fire("LoaderStatus", "Script loaded successfully!")
+        end
+        
         return true
     else
         warn("Failed to load script: " .. tostring(result))
+        
+        -- Dashboard error
+        if LP_DASHBOARD then
+            LP_DASHBOARD:Fire("LoaderStatus", "Failed to load script")
+        end
+        
         return false
     end
 end
