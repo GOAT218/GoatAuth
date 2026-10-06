@@ -25,7 +25,7 @@ else
     isMobile = (devicePlatform == Enum.Platform.Android or devicePlatform == Enum.Platform.IOS)
 end
 
-originalMinSize = isMobile and Vector2.new(550, 600) or Vector2.new(480, 360)
+originalMinSize = isMobile and Vector2.new(480, 240) or Vector2.new(480, 360)
 
 local function IsMobile()
     return isMobile
@@ -3271,9 +3271,9 @@ function Library:CreateWindow(...)
     if type(Config.MenuFadeTime) ~= 'number' then Config.MenuFadeTime = 0.2 end
 
     if typeof(Config.Position) ~= 'UDim2' then Config.Position = UDim2.fromOffset(175, 50) end
-    if typeof(Config.Size) ~= 'UDim2' then Config.Size = UDim2.fromOffset(550, 600) end
-    if type(Config.MinSize) ~= 'Vector2' then Config.MinSize = IsMobile() and Vector2.new(320, 240) or Vector2.new(380, 320) end
-    if type(Config.MaxSize) ~= 'Vector2' then Config.MaxSize = Vector2.new(900, 900) end
+    if typeof(Config.Size) ~= 'UDim2' then Config.Size = IsMobile() and UDim2.fromOffset(560, 320) or UDim2.fromOffset(550, 600) end
+    if type(Config.MinSize) ~= 'Vector2' then Config.MinSize = IsMobile() and Vector2.new(320, 220) or Vector2.new(380, 320) end
+    if type(Config.MaxSize) ~= 'Vector2' then Config.MaxSize = IsMobile() and Vector2.new(900, 900) or Vector2.new(900, 900) end
 
     if Config.Center then
         Config.AnchorPoint = Vector2.new(0.5, 0.5)
@@ -3409,10 +3409,12 @@ function Library:CreateWindow(...)
         end)
 
         local function getPointerPos(input)
-            -- On both mouse and touch, GetMouseLocation() tracks the live position.
-            -- input.Position only captures the position at InputBegan for touch events,
-            -- so we always use GetMouseLocation for the live drag position.
-            return InputService:GetMouseLocation()
+
+
+            if input and input.UserInputType == Enum.UserInputType.Touch then
+                return input.Position
+            end
+            return Vector2.new(Mouse.X, Mouse.Y)
         end
 
         local function clampSize(v)
@@ -3456,34 +3458,34 @@ function Library:CreateWindow(...)
             local startPointer = getPointerPos(Input)
             local startSize = getOuterBaseSize()
             local scaleFactor = getOuterScale()
-            local dragThreshold = Input.UserInputType == Enum.UserInputType.Touch and 2 or 0
 
             if Input.UserInputType == Enum.UserInputType.MouseButton1 then
                 while InputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) do
-                    local now = getPointerPos(Input)
+                    local now = Vector2.new(Mouse.X, Mouse.Y)
                     local delta = now - startPointer
-                    if delta.Magnitude < dragThreshold then
-                        RenderStepped:Wait()
-                        continue
-                    end
                     local scaledDelta = Vector2.new(delta.X / scaleFactor, delta.Y / scaleFactor)
                     local newSize = clampSize(Vector2.new(startSize.X + scaledDelta.X, startSize.Y + scaledDelta.Y))
                     Outer.Size = UDim2.fromOffset(newSize.X, newSize.Y)
                     RenderStepped:Wait()
                 end
             else
-                while (Input.UserInputState ~= Enum.UserInputState.End) and (not Library.Unloaded) do
-                    local now = getPointerPos(Input)
-                    local delta = now - startPointer
-                    if delta.Magnitude < dragThreshold then
-                        RenderStepped:Wait()
-                        continue
+                -- For touch, track the live position via InputChanged on the same touch input
+                local currentTouchPos = Input.Position
+                local touchChangedConn = InputService.InputChanged:Connect(function(changed)
+                    if changed == Input then
+                        currentTouchPos = changed.Position
                     end
+                end)
+
+                while (Input.UserInputState ~= Enum.UserInputState.End) and (not Library.Unloaded) do
+                    local delta = Vector2.new(currentTouchPos.X - startPointer.X, currentTouchPos.Y - startPointer.Y)
                     local scaledDelta = Vector2.new(delta.X / scaleFactor, delta.Y / scaleFactor)
                     local newSize = clampSize(Vector2.new(startSize.X + scaledDelta.X, startSize.Y + scaledDelta.Y))
                     Outer.Size = UDim2.fromOffset(newSize.X, newSize.Y)
                     RenderStepped:Wait()
                 end
+
+                touchChangedConn:Disconnect()
             end
         end)
     end
