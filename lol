@@ -3353,7 +3353,7 @@ function Library:CreateWindow(...)
             Name = 'ResizeHandle',
             AnchorPoint = Vector2.new(1, 1),
             BackgroundTransparency = 1,
-            Position = UDim2.new(1, 0, 1, 0),
+            Position = UDim2.new(1, -4, 1, -4),
             Size = IsMobileDevice and UDim2.fromOffset(56, 56) or UDim2.fromOffset(32, 32),
             ZIndex = 250,
             Parent = Outer,
@@ -3496,10 +3496,11 @@ function Library:CreateWindow(...)
         local MobileToggleBtn = Library:Create('TextButton', {
             BackgroundColor3 = Library.BackgroundColor;
             Position = UDim2.fromOffset(6, 6);
-            Text = 'Toggle';
+            Text = '☰';
             Font = Library.Font;
             TextColor3 = Library.FontColor;
-            TextSize = 16;
+            TextSize = 20;
+            Size = UDim2.fromOffset(44, 44);
             ZIndex = 10;
             Parent = ScreenGui;
         });
@@ -3510,13 +3511,12 @@ function Library:CreateWindow(...)
         }, true);
 
         local function updateToggleSize()
-            local tx, ty = Library:GetTextBounds(MobileToggleBtn.Text, Library.Font, 16)
-            MobileToggleBtn.Size = UDim2.fromOffset(tx * 2, ty * 2)
+            -- size is fixed, no-op kept for compatibility
         end
         updateToggleSize()
 
         Library:Create('UICorner', {
-            CornerRadius = UDim.new(0, 10);
+            CornerRadius = UDim.new(0.5, 0);
             Parent = MobileToggleBtn;
         });
 
