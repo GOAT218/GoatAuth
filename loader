@@ -1,0 +1,49 @@
+local prefix = ""
+
+-- Check if user has lp_key and add to prefix
+if lp_key then
+    prefix = "local lp_key = '" .. lp_key .. "'\n"
+end
+
+prefix = prefix .. [[
+-- luaprot initialization
+]]
+
+local GameId = game.GameId
+
+local Scripts = {
+    [3989768869] = "60887533351036579318", -- TSG
+    [5369242581] = "88512928415190764448", -- Dow
+    [5995470825] = "48794175449906367489", -- HyperShot
+    [6035872082] = "70770555380354344965", -- Rivals
+    [6583326485] = "97149832134761200323", -- Groundwars
+    [6726637224] = "38051361310081996139", -- StreetLife
+    [97314177]   = "89066052075251198843"  -- NinjaTycoon
+}
+
+local function LoadScript()
+    local scriptId = Scripts[GameId]
+    
+    if not scriptId then
+        warn("No script ID found for game: " .. GameId)
+        return false
+    end
+    
+    local success, result = pcall(function()
+        local sdk = loadstring(game:HttpGet("https://sdk.luaprot.net/"))()
+        sdk.scriptId = scriptId
+        return sdk:loadScript()
+    end)
+    
+    if success then
+        print("Successfully loaded script for game: " .. GameId)
+        print("Script ID: " .. scriptId)
+        return true
+    else
+        warn("Failed to load script: " .. tostring(result))
+        return false
+    end
+end
+
+-- Run loader
+LoadScript()
