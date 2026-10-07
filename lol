@@ -1679,6 +1679,194 @@ do
         return Image;
     end;
 
+    function Funcs:AddImageGrid(Info)
+        Info = Info or {}
+
+        local Groupbox = self
+        local Container = Groupbox.Container
+        local Columns = Info.Columns or 4
+        local CellX = (Info.CellSize and Info.CellSize.X) or 72
+        local CellY = (Info.CellSize and Info.CellSize.Y) or 88
+        local Height = Info.Height or 188
+
+        local Grid = {
+            Columns = Columns,
+            Selected = nil,
+            Callback = Info.Callback or function() end,
+            Items = {},
+            Cells = {},
+        }
+
+        local Holder = Library:Create('Frame', {
+            BackgroundTransparency = 1,
+            BorderSizePixel = 0,
+            Size = UDim2.new(1, -4, 0, Height),
+            ZIndex = 5,
+            Parent = Container,
+        })
+
+        local Scroll = Library:Create('ScrollingFrame', {
+            BackgroundColor3 = Library.BackgroundColor,
+            BorderSizePixel = 0,
+            Size = UDim2.new(1, 0, 1, 0),
+            CanvasSize = UDim2.new(0, 0, 0, 0),
+            AutomaticCanvasSize = Enum.AutomaticSize.Y,
+            ScrollBarThickness = 3,
+            ScrollBarImageColor3 = Library.AccentColor,
+            TopImage = 'rbxasset://textures/ui/Scroll/scroll-middle.png',
+            BottomImage = 'rbxasset://textures/ui/Scroll/scroll-middle.png',
+            ZIndex = 6,
+            Parent = Holder,
+        })
+
+        Library:Create('UICorner', {
+            CornerRadius = UDim.new(0, 6),
+            Parent = Scroll,
+        })
+
+        Library:Create('UIPadding', {
+            PaddingTop = UDim.new(0, 4),
+            PaddingBottom = UDim.new(0, 4),
+            PaddingLeft = UDim.new(0, 4),
+            PaddingRight = UDim.new(0, 6),
+            Parent = Scroll,
+        })
+
+        local Layout = Library:Create('UIGridLayout', {
+            CellPadding = UDim2.fromOffset(6, 6),
+            CellSize = UDim2.fromOffset(CellX, CellY),
+            FillDirection = Enum.FillDirection.Horizontal,
+            HorizontalAlignment = Enum.HorizontalAlignment.Left,
+            SortOrder = Enum.SortOrder.LayoutOrder,
+            FillDirectionMaxCells = Columns,
+            Parent = Scroll,
+        })
+
+        Library:AddToRegistry(Scroll, {
+            BackgroundColor3 = 'BackgroundColor',
+            ScrollBarImageColor3 = 'AccentColor',
+        })
+
+        local function applySelection()
+            for id, cell in pairs(Grid.Cells) do
+                if cell.Stroke then
+                    if id == Grid.Selected then
+                        cell.Stroke.Color = Library.AccentColor
+                        cell.Stroke.Thickness = 2
+                    else
+                        cell.Stroke.Color = Library.OutlineColor or Color3.fromRGB(40, 40, 40)
+                        cell.Stroke.Thickness = 1
+                    end
+                end
+            end
+        end
+
+        function Grid:SetSelected(Id)
+            Grid.Selected = Id
+            applySelection()
+        end
+
+        function Grid:GetSelected()
+            return Grid.Selected
+        end
+
+        function Grid:Clear()
+            for _, cell in pairs(Grid.Cells) do
+                if cell.Button then
+                    cell.Button:Destroy()
+                end
+            end
+            Grid.Cells = {}
+            Grid.Items = {}
+        end
+
+        function Grid:SetItems(Items)
+            Grid:Clear()
+            Grid.Items = Items or {}
+
+            for index, item in ipairs(Grid.Items) do
+                local id = item.Id or item.Text or tostring(index)
+                local button = Library:Create('TextButton', {
+                    BackgroundColor3 = Library.MainColor,
+                    BorderSizePixel = 0,
+                    Text = '',
+                    AutoButtonColor = false,
+                    LayoutOrder = index,
+                    ZIndex = 7,
+                    Parent = Scroll,
+                })
+
+                Library:Create('UICorner', {
+                    CornerRadius = UDim.new(0, 6),
+                    Parent = button,
+                })
+
+                local stroke = Library:Create('UIStroke', {
+                    ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
+                    Color = Library.OutlineColor or Color3.fromRGB(40, 40, 40),
+                    Thickness = 1,
+                    Parent = button,
+                })
+
+                local image = Library:Create('ImageLabel', {
+                    BackgroundTransparency = 1,
+                    Image = item.Image or '',
+                    ScaleType = Enum.ScaleType.Fit,
+                    Position = UDim2.new(0, 4, 0, 2),
+                    Size = UDim2.new(1, -8, 1, -22),
+                    ZIndex = 8,
+                    Parent = button,
+                })
+
+                local caption = Library:CreateLabel({
+                    Size = UDim2.new(1, -4, 0, 16),
+                    Position = UDim2.new(0, 2, 1, -18),
+                    Text = item.Text or id,
+                    TextSize = 11,
+                    TextWrapped = true,
+                    TextXAlignment = Enum.TextXAlignment.Center,
+                    ZIndex = 8,
+                    Parent = button,
+                })
+
+                Library:AddToRegistry(button, {
+                    BackgroundColor3 = 'MainColor',
+                })
+
+                if type(item.Tooltip) == 'string' then
+                    Library:AddToolTip(item.Tooltip, button)
+                end
+
+                button.MouseButton1Click:Connect(function()
+                    Grid:SetSelected(id)
+                    Library:SafeCallback(Grid.Callback, id, item)
+                end)
+
+                Grid.Cells[id] = {
+                    Button = button,
+                    Stroke = stroke,
+                    Image = image,
+                    Caption = caption,
+                    Item = item,
+                }
+            end
+
+            applySelection()
+            Groupbox:Resize()
+        end
+
+        function Grid:SetHeight(NewHeight)
+            Height = NewHeight
+            Holder.Size = UDim2.new(1, -4, 0, Height)
+            Groupbox:Resize()
+        end
+
+        Groupbox:AddBlank(5)
+        Groupbox:Resize()
+
+        return Grid
+    end
+
     function Funcs:AddButton(...)
         -- TODO: Eventually redo this
         local Button = {};
@@ -3353,7 +3541,7 @@ function Library:CreateWindow(...)
             Name = 'ResizeHandle',
             AnchorPoint = Vector2.new(1, 1),
             BackgroundTransparency = 1,
-            Position = UDim2.new(1, -4, 1, -4),
+            Position = UDim2.new(1, 0, 1, 0),
             Size = IsMobileDevice and UDim2.fromOffset(56, 56) or UDim2.fromOffset(32, 32),
             ZIndex = 250,
             Parent = Outer,
