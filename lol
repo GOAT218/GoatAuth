@@ -1793,7 +1793,7 @@ do
                     AutoButtonColor = false,
                     LayoutOrder = index,
                     ZIndex = 7,
-                    ClipsDescendants = false,
+                    ClipsDescendants = true,
                     Parent = Scroll,
                 })
 
@@ -1815,7 +1815,7 @@ do
                     ScaleType = Enum.ScaleType.Fit,
                     AnchorPoint = Vector2.new(0.5, 0.5),
                     Position = UDim2.new(0.5, 0, 0.42, 0),
-                    Size = item.ImageSize or UDim2.new(3.2, 0, 2.85, 0),
+                    Size = UDim2.new(2.0, 0, 1.85, 0),
                     ZIndex = 8,
                     Parent = button,
                 })
