@@ -1793,7 +1793,6 @@ do
                     AutoButtonColor = false,
                     LayoutOrder = index,
                     ZIndex = 7,
-                    ClipsDescendants = true,
                     Parent = Scroll,
                 })
 
@@ -1813,21 +1812,20 @@ do
                     BackgroundTransparency = 1,
                     Image = item.Image or '',
                     ScaleType = Enum.ScaleType.Fit,
-                    AnchorPoint = Vector2.new(0.5, 0.5),
-                    Position = UDim2.new(0.5, 0, 0.44, 0),
-                    Size = UDim2.new(1.35, 0, 1.25, 0),
+                    Position = UDim2.new(0, 4, 0, 2),
+                    Size = UDim2.new(1, -8, 1, -22),
                     ZIndex = 8,
                     Parent = button,
                 })
 
                 local caption = Library:CreateLabel({
-                    Size = UDim2.new(1, -2, 0, 16),
-                    Position = UDim2.new(0, 1, 1, -16),
+                    Size = UDim2.new(1, -4, 0, 16),
+                    Position = UDim2.new(0, 2, 1, -18),
                     Text = item.Text or id,
                     TextSize = 11,
                     TextWrapped = true,
                     TextXAlignment = Enum.TextXAlignment.Center,
-                    ZIndex = 9,
+                    ZIndex = 8,
                     Parent = button,
                 })
 
@@ -4441,126 +4439,6 @@ function Library:CreateWindow(...)
 
         function Tab:AddRightGroupbox(Name)
             return Tab:AddGroupbox({ Side = 2; Name = Name; });
-        end;
-
-        -- Full-width groupbox: spans both columns
-        local FullSide do
-            FullSide = Library:Create('ScrollingFrame', {
-                Active = true;
-                BackgroundTransparency = 1;
-                BorderSizePixel = 0;
-                Position = UDim2.new(0, 8 - 1, 0, 8 - 1);
-                Size = UDim2.new(1, -16, 1, -16);
-                CanvasSize = UDim2.new(0, 0, 0, 0);
-                AutomaticCanvasSize = Enum.AutomaticSize.Y;
-                ScrollingEnabled = true;
-                ScrollingDirection = Enum.ScrollingDirection.Y;
-                ElasticBehavior = Enum.ElasticBehavior.Never;
-                BottomImage = '';
-                TopImage = '';
-                ScrollBarThickness = 0;
-                Visible = false;
-                ZIndex = 2;
-                Parent = TabFrame;
-            });
-            Library:Create('UIListLayout', {
-                Padding = UDim.new(0, 8);
-                FillDirection = Enum.FillDirection.Vertical;
-                SortOrder = Enum.SortOrder.LayoutOrder;
-                HorizontalAlignment = Enum.HorizontalAlignment.Center;
-                Parent = FullSide;
-            });
-        end
-
-        function Tab:AddFullGroupbox(Name)
-            -- Hide left/right columns; show full-width column
-            LeftSide.Visible = false
-            RightSide.Visible = false
-            FullSide.Visible = true
-
-            local Groupbox = {};
-
-            local BoxOuter = Library:Create('Frame', {
-                BackgroundColor3 = Library.BackgroundColor;
-                BorderColor3 = Library.OutlineColor;
-                BorderMode = Enum.BorderMode.Inset;
-                Size = UDim2.new(1, 0, 0, 507 + 2);
-                ZIndex = 2;
-                Parent = FullSide;
-            });
-
-            Library:AddToRegistry(BoxOuter, {
-                BackgroundColor3 = 'BackgroundColor';
-                BorderColor3 = 'OutlineColor';
-            });
-
-            local BoxInner = Library:Create('Frame', {
-                BackgroundColor3 = Library.BackgroundColor;
-                BorderColor3 = Color3.new(0, 0, 0);
-                Size = UDim2.new(1, -2, 1, -2);
-                Position = UDim2.new(0, 1, 0, 1);
-                ZIndex = 4;
-                Parent = BoxOuter;
-            });
-
-            Library:AddToRegistry(BoxInner, {
-                BackgroundColor3 = 'BackgroundColor';
-            });
-
-            local Highlight = Library:Create('Frame', {
-                BackgroundColor3 = Library.AccentColor;
-                BorderSizePixel = 0;
-                Size = UDim2.new(1, 0, 0, 2);
-                ZIndex = 5;
-                Parent = BoxInner;
-            });
-
-            Library:AddToRegistry(Highlight, {
-                BackgroundColor3 = 'AccentColor';
-            });
-
-            local GroupboxLabel = Library:CreateLabel({
-                Size = UDim2.new(1, 0, 0, 18);
-                Position = UDim2.new(0, 4, 0, 2);
-                TextSize = 14;
-                Text = Name;
-                TextXAlignment = Enum.TextXAlignment.Left;
-                ZIndex = 5;
-                Parent = BoxInner;
-            });
-
-            local Container = Library:Create('Frame', {
-                BackgroundTransparency = 1;
-                Position = UDim2.new(0, 4, 0, 20);
-                Size = UDim2.new(1, -4, 1, -20);
-                ZIndex = 1;
-                Parent = BoxInner;
-            });
-
-            Library:Create('UIListLayout', {
-                FillDirection = Enum.FillDirection.Vertical;
-                SortOrder = Enum.SortOrder.LayoutOrder;
-                Parent = Container;
-            });
-
-            function Groupbox:Resize()
-                local Size = 0;
-                for _, Element in next, Groupbox.Container:GetChildren() do
-                    if (not Element:IsA('UIListLayout')) and Element.Visible then
-                        Size = Size + Element.Size.Y.Offset;
-                    end;
-                end;
-                BoxOuter.Size = UDim2.new(1, 0, 0, 20 + Size + 2 + 2);
-            end;
-
-            Groupbox.Container = Container;
-            setmetatable(Groupbox, BaseGroupbox);
-
-            Groupbox:AddBlank(3);
-            Groupbox:Resize();
-
-            Tab.Groupboxes[Name] = Groupbox;
-            return Groupbox;
         end;
 
         function Tab:AddTabbox(Info)
