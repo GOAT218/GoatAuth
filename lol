@@ -1685,9 +1685,9 @@ do
         local Groupbox = self
         local Container = Groupbox.Container
         local Columns = Info.Columns or 4
-        local CellX = (Info.CellSize and Info.CellSize.X) or 112
-        local CellY = (Info.CellSize and Info.CellSize.Y) or 106
-        local Height = Info.Height or 240
+        local CellX = (Info.CellSize and Info.CellSize.X) or 72
+        local CellY = (Info.CellSize and Info.CellSize.Y) or 88
+        local Height = Info.Height or 188
 
         local Grid = {
             Columns = Columns,
@@ -1736,7 +1736,7 @@ do
             CellPadding = UDim2.fromOffset(6, 6),
             CellSize = UDim2.fromOffset(CellX, CellY),
             FillDirection = Enum.FillDirection.Horizontal,
-            HorizontalAlignment = Enum.HorizontalAlignment.Center,
+            HorizontalAlignment = Enum.HorizontalAlignment.Left,
             SortOrder = Enum.SortOrder.LayoutOrder,
             FillDirectionMaxCells = Columns,
             Parent = Scroll,
@@ -1793,6 +1793,7 @@ do
                     AutoButtonColor = false,
                     LayoutOrder = index,
                     ZIndex = 7,
+                    ClipsDescendants = true,
                     Parent = Scroll,
                 })
 
@@ -1812,20 +1813,21 @@ do
                     BackgroundTransparency = 1,
                     Image = item.Image or '',
                     ScaleType = Enum.ScaleType.Fit,
-                    Position = UDim2.new(0, 2, 0, 2),
-                    Size = UDim2.new(1, -4, 1, -20),
+                    AnchorPoint = Vector2.new(0.5, 0.5),
+                    Position = UDim2.new(0.5, 0, 0.44, 0),
+                    Size = UDim2.new(1.35, 0, 1.25, 0),
                     ZIndex = 8,
                     Parent = button,
                 })
 
                 local caption = Library:CreateLabel({
-                    Size = UDim2.new(1, -4, 0, 16),
-                    Position = UDim2.new(0, 2, 1, -17),
+                    Size = UDim2.new(1, -2, 0, 16),
+                    Position = UDim2.new(0, 1, 1, -16),
                     Text = item.Text or id,
                     TextSize = 11,
                     TextWrapped = true,
                     TextXAlignment = Enum.TextXAlignment.Center,
-                    ZIndex = 8,
+                    ZIndex = 9,
                     Parent = button,
                 })
 
