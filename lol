@@ -3538,8 +3538,8 @@ function Library:CreateWindow(...)
         BackgroundTransparency = 1,
         BorderSizePixel = 0,
         Position = UDim2.new(0, -2, 0, -2),
-        Size = UDim2.fromOffset(155, 155),
-        Image = 'rbxassetid://491303937',
+        Size = UDim2.fromOffset(160, 160),
+        Image = 'rbxthumb://type=Asset&id=491303937&w=420&h=420',
         ImageColor3 = Color3.fromRGB(255, 255, 255),
         ImageTransparency = 0.05,
         ScaleType = Enum.ScaleType.Fit,
@@ -3547,13 +3547,23 @@ function Library:CreateWindow(...)
         Parent = Outer,
     });
 
+    task.spawn(function()
+        pcall(function()
+            game:GetService("ContentProvider"):PreloadAsync({ SpiderWeb })
+        end)
+        task.wait(1.5)
+        if not SpiderWeb.IsLoaded then
+            SpiderWeb.Image = 'http://www.roblox.com/asset/?id=491303937'
+        end
+    end)
+
     pcall(function()
         local swayTween = TweenService:Create(
             SpiderWeb,
             TweenInfo.new(3.2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true),
             {
                 Rotation = 2.4,
-                Size = UDim2.fromOffset(159, 157),
+                Size = UDim2.fromOffset(164, 162),
             }
         )
         swayTween:Play()
