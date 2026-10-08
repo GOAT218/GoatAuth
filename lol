@@ -3530,6 +3530,35 @@ function Library:CreateWindow(...)
         Color = 'AccentColor';
     }, true);
 
+    -- Top-left animated spider web decoration
+    local SpiderWeb = Library:Create('ImageLabel', {
+        Name = 'SpiderWeb',
+        Active = false,
+        AnchorPoint = Vector2.new(0, 0),
+        BackgroundTransparency = 1,
+        BorderSizePixel = 0,
+        Position = UDim2.new(0, -2, 0, -2),
+        Size = UDim2.fromOffset(155, 155),
+        Image = 'rbxassetid://491303937',
+        ImageColor3 = Color3.fromRGB(255, 255, 255),
+        ImageTransparency = 0.05,
+        ScaleType = Enum.ScaleType.Fit,
+        ZIndex = 200,
+        Parent = Outer,
+    });
+
+    pcall(function()
+        local swayTween = TweenService:Create(
+            SpiderWeb,
+            TweenInfo.new(3.2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true),
+            {
+                Rotation = 2.4,
+                Size = UDim2.fromOffset(159, 157),
+            }
+        )
+        swayTween:Play()
+    end)
+
     local IsMobileDevice = IsMobile();
     local MobileFitScale;
     local MobileToggleScale;
@@ -4215,6 +4244,14 @@ function Library:CreateWindow(...)
 
     function Window:SetWindowTitle(Title)
         WindowLabel.Text = Title;
+    end;
+
+    Window.SpiderWeb = SpiderWeb;
+
+    function Window:SetSpiderWebVisible(Visible)
+        if SpiderWeb then
+            SpiderWeb.Visible = Visible;
+        end;
     end;
 
     function Window:AddTab(Name)
