@@ -388,8 +388,29 @@ function Library:AddToolTip(InfoStr, HoverInstance)
 end
 
 function Library:OnHighlight(HighlightInstance, Instance, Properties, PropertiesDefault)
+    local HoverStroke;
+
+    -- Rounded and inset controls do not always render BorderColor3 clearly.
+    -- A temporary UIStroke makes the same accent outline visible on every control.
+    if Properties.BorderColor3 and Instance:IsA('GuiObject') then
+        HoverStroke = Library:Create('UIStroke', {
+            Name = 'HoverOutline';
+            ApplyStrokeMode = Enum.ApplyStrokeMode.Border;
+            Color = Library.AccentColor;
+            LineJoinMode = Enum.LineJoinMode.Round;
+            Thickness = 1;
+            Transparency = 1;
+            Parent = Instance;
+        });
+    end;
+
     HighlightInstance.MouseEnter:Connect(function()
         local Reg = Library.RegistryMap[Instance];
+
+        if HoverStroke then
+            HoverStroke.Color = Library.AccentColor;
+            HoverStroke.Transparency = 0;
+        end;
 
         for Property, ColorIdx in next, Properties do
             Instance[Property] = Library[ColorIdx] or ColorIdx;
@@ -402,6 +423,10 @@ function Library:OnHighlight(HighlightInstance, Instance, Properties, Properties
 
     HighlightInstance.MouseLeave:Connect(function()
         local Reg = Library.RegistryMap[Instance];
+
+        if HoverStroke then
+            HoverStroke.Transparency = 1;
+        end;
 
         for Property, ColorIdx in next, PropertiesDefault do
             Instance[Property] = Library[ColorIdx] or ColorIdx;
@@ -3542,44 +3567,22 @@ function Library:CreateWindow(...)
         Color = 'AccentColor';
     }, true);
 
-    -- Top-left animated spider web decoration
+    -- Top-left spider web decoration
     local SpiderWeb = Library:Create('ImageLabel', {
         Name = 'SpiderWeb',
         Active = false,
         AnchorPoint = Vector2.new(0, 0),
         BackgroundTransparency = 1,
         BorderSizePixel = 0,
-        Position = UDim2.new(0, -2, 0, -2),
-        Size = UDim2.fromOffset(160, 160),
-        Image = 'rbxthumb://type=Asset&id=491303937&w=420&h=420',
+        Position = UDim2.new(0, 0, 0, 0),
+        Size = UDim2.fromOffset(190, 170),
+        Image = 'rbxassetid://138541613713690',
         ImageColor3 = Color3.fromRGB(255, 255, 255),
-        ImageTransparency = 0.05,
+        ImageTransparency = 0.12,
         ScaleType = Enum.ScaleType.Fit,
         ZIndex = 200,
         Parent = Outer,
     });
-
-    task.spawn(function()
-        pcall(function()
-            game:GetService("ContentProvider"):PreloadAsync({ SpiderWeb })
-        end)
-        task.wait(1.5)
-        if not SpiderWeb.IsLoaded then
-            SpiderWeb.Image = 'http://www.roblox.com/asset/?id=491303937'
-        end
-    end)
-
-    pcall(function()
-        local swayTween = TweenService:Create(
-            SpiderWeb,
-            TweenInfo.new(3.2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true),
-            {
-                Rotation = 2.4,
-                Size = UDim2.fromOffset(164, 162),
-            }
-        )
-        swayTween:Play()
-    end)
 
     local IsMobileDevice = IsMobile();
     local MobileFitScale;
