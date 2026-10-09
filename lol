@@ -1781,10 +1781,20 @@ do
         end
 
         function Grid:SetItems(Items)
+            Grid._SetItemsVersion = (Grid._SetItemsVersion or 0) + 1
+            local setVersion = Grid._SetItemsVersion
             Grid:Clear()
             Grid.Items = Items or {}
 
             for index, item in ipairs(Grid.Items) do
+                -- Large cosmetic grids can create hundreds of UI instances. Yielding in
+                -- small batches prevents one SetItems call from freezing the game frame.
+                if index > 1 and index % 6 == 1 then
+                    task.wait()
+                    if Grid._SetItemsVersion ~= setVersion then
+                        return
+                    end
+                end
                 local id = item.Id or item.Text or tostring(index)
                 local button = Library:Create('TextButton', {
                     BackgroundColor3 = Library.MainColor,
@@ -1853,8 +1863,10 @@ do
                 }
             end
 
-            applySelection()
-            Groupbox:Resize()
+            if Grid._SetItemsVersion == setVersion then
+                applySelection()
+                Groupbox:Resize()
+            end
         end
 
         function Grid:SetHeight(NewHeight)
