@@ -1949,7 +1949,7 @@ do
             });
 
             Library:AddToRegistry(Outer, {
-                BorderColor3 = 'Black';
+                BackgroundColor3 = 'Black';
             });
 
             Library:AddToRegistry(Inner, {
@@ -1958,8 +1958,8 @@ do
             });
 
             Library:OnHighlight(Outer, Outer,
-                { BorderColor3 = 'AccentColor' },
-                { BorderColor3 = 'Black' }
+                { BackgroundColor3 = 'AccentColor' },
+                { BackgroundColor3 = 'Black' }
             );
 
             return Outer, Inner, Label
@@ -3855,6 +3855,22 @@ function Library:CreateWindow(...)
         Parent = Inner;
     });
 
+    local AddedTitleText = type(Config.AddedTitle) == 'string' and Config.AddedTitle or '';
+    local AddedTitleColor = typeof(Config.AddedTitleColor) == 'Color3' and Config.AddedTitleColor or Library.AccentColor;
+    local AddedTitleLabel = Library:CreateLabel({
+        Position = UDim2.new(0, -8, 0, 0);
+        Size = UDim2.new(1, 0, 0, 25);
+        Text = AddedTitleText;
+        TextColor3 = AddedTitleColor;
+        TextXAlignment = Enum.TextXAlignment.Right;
+        Visible = AddedTitleText ~= '';
+        ZIndex = 1;
+        Parent = Inner;
+    });
+
+    -- This color belongs to the window configuration rather than the active theme.
+    Library:RemoveFromRegistry(AddedTitleLabel);
+
     local MainSectionOuter = Library:Create('Frame', {
         BackgroundColor3 = Library.BackgroundColor;
         BorderColor3 = Library.OutlineColor;
@@ -4267,6 +4283,19 @@ function Library:CreateWindow(...)
     function Window:SetWindowTitle(Title)
         WindowLabel.Text = Title;
     end;
+
+    function Window:SetAddedTitle(Title)
+        AddedTitleLabel.Text = type(Title) == 'string' and Title or '';
+        AddedTitleLabel.Visible = AddedTitleLabel.Text ~= '';
+    end;
+
+    function Window:SetAddedTitleColor(Color)
+        if typeof(Color) == 'Color3' then
+            AddedTitleLabel.TextColor3 = Color;
+        end;
+    end;
+
+    Window.AddedTitleLabel = AddedTitleLabel;
 
     Window.SpiderWeb = SpiderWeb;
 
