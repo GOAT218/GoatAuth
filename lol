@@ -1718,6 +1718,10 @@
                                                                             Columns = Columns,
                                                                             Selected = nil,
                                                                             Callback = Info.Callback or function() end,
+                                                                            RightClickCallback = Info.RightClickCallback,
+                                                                            Preview = Info.Preview,
+                                                                            LargePreview = Info.LargePreview == true,
+                                                                            Query = '',
                                                                             Items = {},
                                                                             Cells = {},
                                                                         }
@@ -1772,16 +1776,25 @@
                                                                             ScrollBarImageColor3 = 'AccentColor',
                                                                         })
 
+                                                                        local function mixAccent(amount)
+                                                                            local a = Library.MainColor
+                                                                            local b = Library.AccentColor
+                                                                            return Color3.new(
+                                                                                a.R + (b.R - a.R) * amount,
+                                                                                a.G + (b.G - a.G) * amount,
+                                                                                a.B + (b.B - a.B) * amount
+                                                                            )
+                                                                        end
+
                                                                         local function applySelection()
                                                                             for id, cell in pairs(Grid.Cells) do
+                                                                                local selected = id == Grid.Selected
                                                                                 if cell.Stroke then
-                                                                                    if id == Grid.Selected then
-                                                                                        cell.Stroke.Color = Library.AccentColor
-                                                                                        cell.Stroke.Thickness = 2
-                                                                                    else
-                                                                                        cell.Stroke.Color = Library.OutlineColor or Color3.fromRGB(40, 40, 40)
-                                                                                        cell.Stroke.Thickness = 1
-                                                                                    end
+                                                                                    cell.Stroke.Color = selected and Library.AccentColor or (Library.OutlineColor or Color3.fromRGB(40, 40, 40))
+                                                                                    cell.Stroke.Thickness = selected and 2 or 1
+                                                                                end
+                                                                                if cell.Button then
+                                                                                    cell.Button.BackgroundColor3 = selected and mixAccent(0.22) or Library.MainColor
                                                                                 end
                                                                             end
                                                                         end
@@ -1828,7 +1841,7 @@
                                                                                     AutoButtonColor = false,
                                                                                     LayoutOrder = index,
                                                                                     ZIndex = 7,
-                                                                                    ClipsDescendants = false,
+                                                                                    ClipsDescendants = true,
                                                                                     Parent = Scroll,
                                                                                 })
 
@@ -1844,27 +1857,38 @@
                                                                                     Parent = button,
                                                                                 })
 
+                                                                                local large = Grid.LargePreview or item.LargePreview
                                                                                 local image = Library:Create('ImageLabel', {
                                                                                     BackgroundTransparency = 1,
                                                                                     Image = item.Image or '',
                                                                                     ScaleType = Enum.ScaleType.Fit,
-                                                                                    AnchorPoint = Vector2.new(0.5, 0.5),
-                                                                                    Position = UDim2.new(0.5, 0, 0.42, 0),
-                                                                                    Size = item.ImageSize or UDim2.new(2.7, 0, 2.4, 0),
+                                                                                    AnchorPoint = large and Vector2.new(0, 0) or Vector2.new(0.5, 0.5),
+                                                                                    Position = item.ImagePosition or (large and UDim2.fromOffset(-61, -43) or UDim2.new(0.5, 0, 0.42, 0)),
+                                                                                    Size = item.ImageSize or (large and UDim2.fromOffset(252, 176) or UDim2.new(2.7, 0, 2.4, 0)),
                                                                                     ZIndex = 8,
                                                                                     Parent = button,
                                                                                 })
 
                                                                                 local caption = Library:CreateLabel({
-                                                                                    Size = UDim2.new(1, -2, 0, 16),
-                                                                                    Position = UDim2.new(0, 1, 1, -16),
+                                                                                    Size = UDim2.new(1, -8, 0, large and 32 or 16),
+                                                                                    Position = UDim2.new(0, 4, 1, large and -34 or -16),
                                                                                     Text = item.Text or id,
-                                                                                    TextSize = 11,
+                                                                                    TextSize = large and 13 or 11,
                                                                                     TextWrapped = true,
                                                                                     TextXAlignment = Enum.TextXAlignment.Center,
                                                                                     ZIndex = 9,
                                                                                     Parent = button,
                                                                                 })
+                                                                                if large then
+                                                                                    caption.TextScaled = true
+                                                                                end
+
+                                                                                if Grid.Preview then
+                                                                                    local ok, used = pcall(Grid.Preview, item, button, image)
+                                                                                    if ok and used then
+                                                                                        image.Visible = false
+                                                                                    end
+                                                                                end
 
                                                                                 Library:AddToRegistry(button, {
                                                                                     BackgroundColor3 = 'MainColor',
@@ -1879,6 +1903,13 @@
                                                                                     Library:SafeCallback(Grid.Callback, id, item)
                                                                                 end)
 
+                                                                                button.MouseButton2Click:Connect(function()
+                                                                                    Grid:SetSelected(id)
+                                                                                    if Grid.RightClickCallback then
+                                                                                        Library:SafeCallback(Grid.RightClickCallback, id, item)
+                                                                                    end
+                                                                                end)
+
                                                                                 Grid.Cells[id] = {
                                                                                     Button = button,
                                                                                     Stroke = stroke,
@@ -1890,7 +1921,20 @@
 
                                                                             if Grid._SetItemsVersion == setVersion then
                                                                                 applySelection()
+                                                                                if Grid.Query and Grid.Query ~= '' then
+                                                                                    Grid:SetQuery(Grid.Query)
+                                                                                end
                                                                                 Groupbox:Resize()
+                                                                            end
+                                                                        end
+
+                                                                        function Grid:SetQuery(Query)
+                                                                            Grid.Query = tostring(Query or '')
+                                                                            local needle = string.lower(Grid.Query)
+                                                                            for _, cell in pairs(Grid.Cells) do
+                                                                                local item = cell.Item or {}
+                                                                                local hay = string.lower(tostring(item.Text or '') .. ' ' .. tostring(item.Id or '') .. ' ' .. tostring(item.Tooltip or ''))
+                                                                                cell.Button.Visible = needle == '' or string.find(hay, needle, 1, true) ~= nil
                                                                             end
                                                                         end
 
@@ -1904,6 +1948,143 @@
                                                                         Groupbox:Resize()
 
                                                                         return Grid
+                                                                    end
+
+                                                                    function Funcs:AddCosmeticBrowser(Info)
+                                                                        Info = Info or {}
+
+                                                                        local Groupbox = self
+                                                                        local Prefix = Info.Idx or ('CosmeticBrowser_' .. tostring(math.floor(os.clock() * 1000)))
+                                                                        local Columns = Info.Columns or 6
+                                                                        local CellSize = Info.CellSize or Vector2.new(118, 112)
+                                                                        local Modes = Info.Modes or { 'Skin', 'Wrap', 'Charm', 'Finisher' }
+
+                                                                        local Browser = {
+                                                                            Mode = Info.DefaultMode or Modes[1] or 'Skin',
+                                                                            SelectedWeapon = nil,
+                                                                            SelectedCosmetic = nil,
+                                                                            WeaponGrid = nil,
+                                                                            CosmeticGrid = nil,
+                                                                        }
+
+                                                                        Groupbox:AddInput(Prefix .. 'WeaponFilter', {
+                                                                            Text = 'weapon filter',
+                                                                            Placeholder = Info.WeaponPlaceholder or 'grenade launcher...',
+                                                                            Finished = false,
+                                                                            Callback = function(Value)
+                                                                                if Browser.WeaponGrid then
+                                                                                    Browser.WeaponGrid:SetQuery(Value)
+                                                                                end
+                                                                            end,
+                                                                        })
+
+                                                                        Browser.WeaponGrid = Groupbox:AddImageGrid({
+                                                                            Columns = Columns,
+                                                                            CellSize = CellSize,
+                                                                            Height = Info.WeaponHeight or 220,
+                                                                            LargePreview = true,
+                                                                            Preview = Info.WeaponPreview,
+                                                                            Callback = function(Id, Item)
+                                                                                Browser.SelectedWeapon = Id
+                                                                                Library:SafeCallback(Info.OnSelectWeapon, Id, Item, Browser)
+                                                                                if Browser.ReloadCosmetics then
+                                                                                    Browser:ReloadCosmetics()
+                                                                                end
+                                                                            end,
+                                                                            RightClickCallback = function(Id, Item)
+                                                                                Browser.SelectedWeapon = Id
+                                                                                Library:SafeCallback(Info.OnRightClickWeapon, Id, Item, Browser)
+                                                                            end,
+                                                                        })
+
+                                                                        Groupbox:AddInput(Prefix .. 'CosmeticFilter', {
+                                                                            Text = 'cosmetic filter',
+                                                                            Placeholder = Info.CosmeticPlaceholder or 'red...',
+                                                                            Finished = false,
+                                                                            Callback = function(Value)
+                                                                                if Browser.CosmeticGrid then
+                                                                                    Browser.CosmeticGrid:SetQuery(Value)
+                                                                                end
+                                                                            end,
+                                                                        })
+
+                                                                        Browser.CosmeticGrid = Groupbox:AddImageGrid({
+                                                                            Columns = Columns,
+                                                                            CellSize = CellSize,
+                                                                            Height = Info.CosmeticHeight or 248,
+                                                                            LargePreview = true,
+                                                                            Preview = Info.CosmeticPreview,
+                                                                            Callback = function(Id, Item)
+                                                                                Browser.SelectedCosmetic = Id
+                                                                                Library:SafeCallback(Info.OnSelectCosmetic, Id, Item, Browser)
+                                                                            end,
+                                                                        })
+
+                                                                        function Browser:SetWeapons(Items)
+                                                                            if Browser.WeaponGrid then
+                                                                                Browser.WeaponGrid:SetItems(Items or {})
+                                                                            end
+                                                                        end
+
+                                                                        function Browser:SetCosmetics(Items)
+                                                                            if Browser.CosmeticGrid then
+                                                                                Browser.CosmeticGrid:SetItems(Items or {})
+                                                                            end
+                                                                        end
+
+                                                                        function Browser:ReloadCosmetics()
+                                                                            if type(Info.GetCosmetics) == 'function' then
+                                                                                Browser:SetCosmetics(Info.GetCosmetics(Browser.SelectedWeapon, Browser.Mode, Browser) or {})
+                                                                            end
+                                                                        end
+
+                                                                        Groupbox:AddDropdown(Prefix .. 'Mode', {
+                                                                            Text = 'category',
+                                                                            Values = Modes,
+                                                                            Default = 1,
+                                                                            Callback = function(Value)
+                                                                                Browser.Mode = Value
+                                                                                Library:SafeCallback(Info.OnModeChanged, Value, Browser)
+                                                                                if Browser.ReloadCosmetics then
+                                                                                    Browser:ReloadCosmetics()
+                                                                                end
+                                                                            end,
+                                                                        })
+
+                                                                        local ApplyBtn = Groupbox:AddButton({
+                                                                            Text = 'apply selected to all',
+                                                                            Func = function()
+                                                                                Library:SafeCallback(Info.OnApplyAll, Browser)
+                                                                            end,
+                                                                        })
+                                                                        if ApplyBtn and ApplyBtn.AddButton then
+                                                                            ApplyBtn:AddButton({
+                                                                                Text = 'reset to defaults',
+                                                                                Func = function()
+                                                                                    Library:SafeCallback(Info.OnReset, Browser)
+                                                                                end,
+                                                                            })
+                                                                        else
+                                                                            Groupbox:AddButton({
+                                                                                Text = 'reset to defaults',
+                                                                                Func = function()
+                                                                                    Library:SafeCallback(Info.OnReset, Browser)
+                                                                                end,
+                                                                            })
+                                                                        end
+
+                                                                        Groupbox:AddLabel('right click a weapon to toggle the skin changer for it.')
+
+                                                                        if type(Info.GetWeapons) == 'function' then
+                                                                            Browser:SetWeapons(Info.GetWeapons(Browser) or {})
+                                                                        elseif type(Info.Weapons) == 'table' then
+                                                                            Browser:SetWeapons(Info.Weapons)
+                                                                        end
+
+                                                                        Browser:ReloadCosmetics()
+                                                                        Groupbox:Resize()
+
+                                                                        return Browser
                                                                     end
 
                                                                     function Funcs:AddButton(...)
