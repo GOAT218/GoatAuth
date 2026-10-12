@@ -1729,7 +1729,7 @@
                                                                         local Holder = Library:Create('Frame', {
                                                                             BackgroundTransparency = 1,
                                                                             BorderSizePixel = 0,
-                                                                            Size = UDim2.new(1, -4, 0, Height),
+                                                                            Size = UDim2.new(1, 0, 0, Height),
                                                                             ZIndex = 5,
                                                                             Parent = Container,
                                                                         })
@@ -1740,7 +1740,7 @@
                                                                             Size = UDim2.new(1, 0, 1, 0),
                                                                             CanvasSize = UDim2.new(0, 0, 0, 0),
                                                                             AutomaticCanvasSize = Enum.AutomaticSize.Y,
-                                                                            ScrollBarThickness = 3,
+                                                                            ScrollBarThickness = 4,
                                                                             ScrollBarImageColor3 = Library.AccentColor,
                                                                             TopImage = 'rbxasset://textures/ui/Scroll/scroll-middle.png',
                                                                             BottomImage = 'rbxasset://textures/ui/Scroll/scroll-middle.png',
@@ -1753,23 +1753,44 @@
                                                                             Parent = Scroll,
                                                                         })
 
+                                                                        local GridPad = 4
+                                                                        local GridGap = 4
+
                                                                         Library:Create('UIPadding', {
-                                                                            PaddingTop = UDim.new(0, 4),
-                                                                            PaddingBottom = UDim.new(0, 4),
-                                                                            PaddingLeft = UDim.new(0, 4),
-                                                                            PaddingRight = UDim.new(0, 6),
+                                                                            PaddingTop = UDim.new(0, GridPad),
+                                                                            PaddingBottom = UDim.new(0, GridPad),
+                                                                            PaddingLeft = UDim.new(0, GridPad),
+                                                                            PaddingRight = UDim.new(0, GridPad),
                                                                             Parent = Scroll,
                                                                         })
 
                                                                         local Layout = Library:Create('UIGridLayout', {
-                                                                            CellPadding = UDim2.fromOffset(6, 6),
+                                                                            CellPadding = UDim2.fromOffset(GridGap, GridGap),
                                                                             CellSize = UDim2.fromOffset(CellX, CellY),
                                                                             FillDirection = Enum.FillDirection.Horizontal,
                                                                             HorizontalAlignment = Enum.HorizontalAlignment.Left,
+                                                                            VerticalAlignment = Enum.VerticalAlignment.Top,
                                                                             SortOrder = Enum.SortOrder.LayoutOrder,
                                                                             FillDirectionMaxCells = Columns,
                                                                             Parent = Scroll,
                                                                         })
+
+                                                                        function Grid:Relayout()
+                                                                            local abs = Scroll.AbsoluteSize
+                                                                            local inner = math.max(1, abs.X - (GridPad * 2) - Scroll.ScrollBarThickness)
+                                                                            local cellW = math.floor((inner - GridGap * math.max(0, Columns - 1)) / Columns)
+                                                                            if cellW < 16 then return end
+                                                                            Layout.CellSize = UDim2.fromOffset(cellW, CellY)
+                                                                            Layout.CellPadding = UDim2.fromOffset(GridGap, GridGap)
+                                                                            Layout.FillDirectionMaxCells = Columns
+                                                                        end
+
+                                                                        Scroll:GetPropertyChangedSignal('AbsoluteSize'):Connect(function()
+                                                                            Grid:Relayout()
+                                                                        end)
+                                                                        task.defer(function()
+                                                                            Grid:Relayout()
+                                                                        end)
 
                                                                         Library:AddToRegistry(Scroll, {
                                                                             BackgroundColor3 = 'BackgroundColor',
@@ -1924,6 +1945,7 @@
                                                                                 if Grid.Query and Grid.Query ~= '' then
                                                                                     Grid:SetQuery(Grid.Query)
                                                                                 end
+                                                                                Grid:Relayout()
                                                                                 Groupbox:Resize()
                                                                             end
                                                                         end
@@ -1940,7 +1962,8 @@
 
                                                                         function Grid:SetHeight(NewHeight)
                                                                             Height = NewHeight
-                                                                            Holder.Size = UDim2.new(1, -4, 0, Height)
+                                                                            Holder.Size = UDim2.new(1, 0, 0, Height)
+                                                                            Grid:Relayout()
                                                                             Groupbox:Resize()
                                                                         end
 
@@ -4673,7 +4696,7 @@
                                                                             local Container = Library:Create('Frame', {
                                                                                 BackgroundTransparency = 1;
                                                                                 Position = UDim2.new(0, 4, 0, 20);
-                                                                                Size = UDim2.new(1, -4, 1, -20);
+                                                                                Size = UDim2.new(1, -8, 1, -20);
                                                                                 ZIndex = 1;
                                                                                 Parent = BoxInner;
                                                                             });
@@ -4739,7 +4762,7 @@
                                                                                 Padding = UDim.new(0, 8);
                                                                                 FillDirection = Enum.FillDirection.Vertical;
                                                                                 SortOrder = Enum.SortOrder.LayoutOrder;
-                                                                                HorizontalAlignment = Enum.HorizontalAlignment.Center;
+                                                                                HorizontalAlignment = Enum.HorizontalAlignment.Left;
                                                                                 Parent = FullSide;
                                                                             });
                                                                         end
@@ -4804,7 +4827,7 @@
                                                                             local Container = Library:Create('Frame', {
                                                                                 BackgroundTransparency = 1;
                                                                                 Position = UDim2.new(0, 4, 0, 20);
-                                                                                Size = UDim2.new(1, -4, 1, -20);
+                                                                                Size = UDim2.new(1, -8, 1, -20);
                                                                                 ZIndex = 1;
                                                                                 Parent = BoxInner;
                                                                             });
