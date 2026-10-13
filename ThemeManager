@@ -1,0 +1,441 @@
+local cloneref = (cloneref or clonereference or function(instance)
+	return instance
+end)
+
+local function ternary(cond, a, b)
+	if cond then return a else return b end
+end
+
+local clonefunction = (clonefunction or copyfunction or function(func)
+	return func
+end)
+
+local httprequest = request or http_request or (http and http.request)
+local getassetfunc = getcustomasset
+
+local HttpService = cloneref(game:GetService('HttpService'));
+local isfolder, isfile, listfiles = isfolder, isfile, listfiles;
+
+local assert = function(condition, errorMessage)
+	if (not condition) then
+		error(errorMessage or 'assert failed', 3)
+	end
+end
+
+if typeof(clonefunction) == 'function' then
+	local
+		isfolder_copy,
+		isfile_copy,
+		listfiles_copy = clonefunction(isfolder), clonefunction(isfile), clonefunction(listfiles)
+
+	local isfolder_success, isfolder_error = pcall(function()
+		return isfolder_copy('test' .. tostring(math.random(1000000, 9999999)))
+	end)
+
+	if isfolder_success == false or typeof(isfolder_error) ~= 'boolean' then
+		isfolder = function(folder)
+			local success, data = pcall(isfolder_copy, folder)
+			return ternary(success, data, false)
+		end
+
+		isfile = function(file)
+			local success, data = pcall(isfile_copy, file)
+			return ternary(success, data, false)
+		end
+
+		listfiles = function(folder)
+			local success, data = pcall(listfiles_copy, folder)
+			return ternary(success, data, {})
+		end
+	end
+end
+
+local ThemeManager = {} do
+	local ThemeFields = { 'FontColor', 'MainColor', 'AccentColor', 'BackgroundColor', 'OutlineColor', 'VideoLink' }
+	ThemeManager.Folder = 'LinoriaLibSettings'
+
+	ThemeManager.Library = nil
+	ThemeManager.BuiltInThemes = {
+		['Default'] = { 0, { FontColor = 'ebdbb2', MainColor = '282828', AccentColor = 'fe8019', BackgroundColor = '1d2021', OutlineColor = '3c3836' } },
+		['Elite Zone'] = { 1, { FontColor = 'ffffff', MainColor = '181818', AccentColor = '858586', BackgroundColor = '141414', OutlineColor = '1f1f1f' } },
+		['UE'] = { 2, { FontColor = 'ffffff', MainColor = '181818', AccentColor = '4777b6', BackgroundColor = '141414', OutlineColor = '1f1f1f' } },
+		['Better UE'] = { 2.5, { FontColor = 'd6d6d6', MainColor = '181818', AccentColor = '4777b6', BackgroundColor = '141414', OutlineColor = '1f1f1f' } },
+		['BBot'] = { 3, { FontColor = 'ffffff', MainColor = '1e1e1e', AccentColor = '7e48a3', BackgroundColor = '232323', OutlineColor = '141414' } },
+		['Fatality'] = { 4, { FontColor = 'ffffff', MainColor = '1e1842', AccentColor = 'c50754', BackgroundColor = '191335', OutlineColor = '3c355d' } },
+		['Jester'] = { 5, { FontColor = 'ffffff', MainColor = '242424', AccentColor = 'db4467', BackgroundColor = '1c1c1c', OutlineColor = '373737' } },
+		['Mint'] = { 6, { FontColor = 'ffffff', MainColor = '242424', AccentColor = '3db488', BackgroundColor = '1c1c1c', OutlineColor = '373737' } },
+		['Tokyo Night'] = { 7, { FontColor = 'ffffff', MainColor = '191925', AccentColor = '6759b3', BackgroundColor = '16161f', OutlineColor = '323232' } },
+		['Ubuntu'] = { 8, { FontColor = 'ffffff', MainColor = '3e3e3e', AccentColor = 'e2581e', BackgroundColor = '323232', OutlineColor = '191919' } },
+		['Quartz'] = { 9, { FontColor = 'ffffff', MainColor = '232330', AccentColor = '426e87', BackgroundColor = '1d1b26', OutlineColor = '27232f' } },
+		['Crimson'] = { 10, { FontColor = 'ffffff', MainColor = '1f1515', AccentColor = 'cc2222', BackgroundColor = '160e0e', OutlineColor = '3a1f1f' } },
+		['Cyberpunk'] = { 11, { FontColor = 'ffffff', MainColor = '0d0d1a', AccentColor = '00ffe0', BackgroundColor = '080810', OutlineColor = '1a1a33' } },
+		['Caramel'] = { 12, { FontColor = 'ffffff', MainColor = '2b1f10', AccentColor = 'd4822a', BackgroundColor = '1c1208', OutlineColor = '3d2b12' } },
+		['Ocean'] = { 13, { FontColor = 'ffffff', MainColor = '0d1b2a', AccentColor = '1e90ff', BackgroundColor = '080f18', OutlineColor = '1a3a5c' } },
+		['Lavender'] = { 14, { FontColor = 'ffffff', MainColor = '22203a', AccentColor = 'b48ef0', BackgroundColor = '19172d', OutlineColor = '35305a' } },
+		['Matrix'] = { 15, { FontColor = '00ff41', MainColor = '0d1a0d', AccentColor = '00cc33', BackgroundColor = '080f08', OutlineColor = '0f2b0f' } },
+		['Rose Gold'] = { 16, { FontColor = 'ffffff', MainColor = '2a1a1f', AccentColor = 'e8a0b0', BackgroundColor = '1e1015', OutlineColor = '3d2030' } },
+		['Midnight Gold'] = { 17, { FontColor = 'ffffff', MainColor = '12162b', AccentColor = 'c9a84c', BackgroundColor = '0c0f1e', OutlineColor = '1e2440' } },
+		['Rust'] = { 18, { FontColor = 'ffffff', MainColor = '1e1510', AccentColor = 'c0521a', BackgroundColor = '140e08', OutlineColor = '3b2010' } },
+		['Slate'] = { 19, { FontColor = 'ffffff', MainColor = '1e2a2a', AccentColor = '4db8b8', BackgroundColor = '141f1f', OutlineColor = '2a3d3d' } },
+		['Dracula'] = { 20, { FontColor = 'f8f8f2', MainColor = '282a36', AccentColor = 'bd93f9', BackgroundColor = '1e1f29', OutlineColor = '44475a' } },
+		['Synthwave'] = { 21, { FontColor = 'ffffff', MainColor = '1a0a2e', AccentColor = 'ff2d78', BackgroundColor = '110720', OutlineColor = '2d1050' } },
+		['Forest'] = { 22, { FontColor = 'ffffff', MainColor = '1a2215', AccentColor = '5a9e3a', BackgroundColor = '111a0d', OutlineColor = '2a3d1e' } },
+		['Arctic'] = { 23, { FontColor = 'ffffff', MainColor = '1a2535', AccentColor = 'a8d8f0', BackgroundColor = '111c2a', OutlineColor = '253545' } },
+		['Charcoal'] = { 24, { FontColor = 'ffffff', MainColor = '2e2e2e', AccentColor = 'aaaaaa', BackgroundColor = '222222', OutlineColor = '444444' } },
+		['One Dark'] = { 25, { FontColor = 'abb2bf', MainColor = '282c34', AccentColor = '61afef', BackgroundColor = '21252b', OutlineColor = '3e4451' } },
+		['Nord'] = { 26, { FontColor = 'd8dee9', MainColor = '2e3440', AccentColor = '88c0d0', BackgroundColor = '242933', OutlineColor = '3b4252' } },
+		['Ayu Mirage'] = { 27, { FontColor = 'cccac2', MainColor = '1f2430', AccentColor = 'ffcc66', BackgroundColor = '171b24', OutlineColor = '242936' } },
+		['Material Ocean'] = { 28, { FontColor = '8f93a2', MainColor = '0f111a', AccentColor = '80cbc4', BackgroundColor = '090b10', OutlineColor = '1a1c25' } },
+		['Deep Sea'] = { 29, { FontColor = 'ffffff', MainColor = '001220', AccentColor = '0077b6', BackgroundColor = '000b14', OutlineColor = '002a45' } },
+		['Vampire'] = { 30, { FontColor = 'ffffff', MainColor = '1a0000', AccentColor = 'e60000', BackgroundColor = '0d0000', OutlineColor = '330000' } },
+		['Obsidian'] = { 31, { FontColor = 'ffffff', MainColor = '0a0a0a', AccentColor = '00ff88', BackgroundColor = '050505', OutlineColor = '1a1a1a' } },
+		['UwUWare'] = { 32, { FontColor = 'ffffff', MainColor = '181818', AccentColor = 'f9a9d4', BackgroundColor = '181818', OutlineColor = '181818' } },
+	}
+
+	function ApplyBackgroundVideo(videoLink)
+		if
+			typeof(videoLink) ~= 'string' or
+			not (getassetfunc and writefile and readfile and isfile) or
+			not (ThemeManager.Library and ThemeManager.Library.InnerVideoBackground)
+		then return end
+
+		local videoInstance = ThemeManager.Library.InnerVideoBackground;
+		local extension = videoLink:match('.*/(.-)?') or videoLink:match('.*/(.-)$');
+		extension = tostring(extension);
+		local _, domain = videoLink:match('^(https?://)([^/]+)');
+		domain = tostring(domain);
+
+		if videoLink == '' then
+			videoInstance:Pause();
+			videoInstance.Video = '';
+			videoInstance.Visible = false;
+			return
+		end
+		if #extension > 5 and string.sub(extension, -5) ~= '.webm' then return end
+
+		local videoFile = ThemeManager.Folder .. '/themes/' .. string.gsub(domain .. extension, 0, 249) .. '.webm';
+		if not isfile(videoFile) then
+			local success, requestRes = pcall(httprequest, { Url = videoLink, Method = 'GET' })
+			if not (success and typeof(requestRes) == 'table' and typeof(requestRes.Body) == 'string') then return end
+
+			writefile(videoFile, requestRes.Body)
+		end
+
+		videoInstance.Video = getassetfunc(videoFile);
+		videoInstance.Visible = true;
+		videoInstance:Play();
+	end
+
+	function ThemeManager:SetLibrary(library)
+		self.Library = library
+	end
+
+	function ThemeManager:GetPaths()
+		local paths = {}
+		local parts = self.Folder:split('/')
+		for idx = 1, #parts do
+			paths[#paths + 1] = table.concat(parts, '/', 1, idx)
+		end
+		paths[#paths + 1] = self.Folder .. '/themes'
+		return paths
+	end
+
+	function ThemeManager:BuildFolderTree()
+		local paths = self:GetPaths()
+		for i = 1, #paths do
+			local str = paths[i]
+			if not isfolder(str) then
+				makefolder(str)
+			end
+		end
+	end
+
+	function ThemeManager:CheckFolderTree()
+		if isfolder(self.Folder) then return end
+		self:BuildFolderTree()
+		task.wait(0.1)
+	end
+
+	function ThemeManager:SetFolder(folder)
+		self.Folder = folder;
+		self:BuildFolderTree()
+	end
+
+	function ThemeManager:ApplyTheme(theme)
+		local customThemeData = self:GetCustomTheme(theme)
+		local data = customThemeData or self.BuiltInThemes[theme]
+
+		if not data then return end
+
+		if self.Library.InnerVideoBackground ~= nil then
+			self.Library.InnerVideoBackground.Visible = false
+		end
+
+		local scheme = data[2]
+		for idx, col in next, customThemeData or scheme do
+			if idx == 'VideoLink' then
+				self.Library[idx] = col;
+
+				if Options[idx] then
+					Options[idx]:SetValue(col)
+				end
+
+				ApplyBackgroundVideo(col)
+			else
+				self.Library[idx] = Color3.fromHex(col);
+
+				if Options[idx] then
+					Options[idx]:SetValueRGB(Color3.fromHex(col))
+				end
+			end
+		end
+
+		self:ThemeUpdate()
+	end
+
+	function ThemeManager:ThemeUpdate()
+		if self.Library.InnerVideoBackground ~= nil then
+			self.Library.InnerVideoBackground.Visible = false
+		end
+
+		for i, field in next, ThemeFields do
+			if Options and Options[field] then
+				self.Library[field] = Options[field].Value
+
+				if field == 'VideoLink' then
+					ApplyBackgroundVideo(Options[field].Value)
+				end
+			end
+		end
+
+		self.Library.AccentColorDark = self.Library:GetDarkerColor(self.Library.AccentColor);
+		self.Library:UpdateColorsUsingRegistry()
+	end
+
+	function ThemeManager:GetCustomTheme(file)
+		local path = self.Folder .. '/themes/' .. file .. '.json'
+		if not isfile(path) then
+			return nil
+		end
+
+		local data = readfile(path)
+		local success, decoded = pcall(HttpService.JSONDecode, HttpService, data)
+
+		if not success then
+			return nil
+		end
+
+		return decoded
+	end
+
+	function ThemeManager:LoadDefault()
+		local theme = 'Default'
+		local content = isfile(self.Folder .. '/themes/default.txt') and readfile(self.Folder .. '/themes/default.txt')
+
+		local isDefault = true
+		if content then
+			if self.BuiltInThemes[content] then
+				theme = content
+			elseif self:GetCustomTheme(content) then
+				theme = content
+				isDefault = false;
+			end
+		elseif self.BuiltInThemes[self.DefaultTheme] then
+			theme = self.DefaultTheme
+		end
+
+		if isDefault then
+			Options.ThemeManager_ThemeList:SetValue(theme)
+		else
+			self:ApplyTheme(theme)
+		end
+	end
+
+	function ThemeManager:SaveDefault(theme)
+		writefile(self.Folder .. '/themes/default.txt', theme)
+	end
+
+	function ThemeManager:SaveCustomTheme(file)
+		if file:gsub(' ', '') == '' then
+			self.Library:Notify('Invalid file name for theme (empty)', 3)
+			return
+		end
+
+		local theme = {}
+		for _, field in next, ThemeFields do
+			if field == 'VideoLink' then
+				theme[field] = Options[field].Value
+			else
+				theme[field] = Options[field].Value:ToHex()
+			end
+		end
+
+		writefile(self.Folder .. '/themes/' .. file .. '.json', HttpService:JSONEncode(theme))
+	end
+
+	function ThemeManager:Delete(name)
+		if (not name) then
+			return false, 'no config file is selected'
+		end
+
+		local file = self.Folder .. '/themes/' .. name .. '.json'
+		if not isfile(file) then return false, 'invalid file' end
+
+		local success = pcall(delfile, file)
+		if not success then return false, 'delete file error' end
+
+		return true
+	end
+
+	function ThemeManager:ReloadCustomThemes()
+		local list = listfiles(self.Folder .. '/themes')
+
+		local out = {}
+		for i = 1, #list do
+			local file = list[i]
+			if file:sub(-5) == '.json' then
+				local pos = file:find('.json', 1, true)
+				local start = pos
+
+				local char = file:sub(pos, pos)
+				while char ~= '/' and char ~= '\\' and char ~= '' do
+					pos = pos - 1
+					char = file:sub(pos, pos)
+				end
+
+				if char == '/' or char == '\\' then
+					table.insert(out, file:sub(pos + 1, start - 1))
+				end
+			end
+		end
+
+		return out
+	end
+
+	function ThemeManager:CreateThemeManager(groupbox)
+		groupbox:AddLabel('Background color'):AddColorPicker('BackgroundColor', { Default = self.Library.BackgroundColor });
+		groupbox:AddLabel('Main color'):AddColorPicker('MainColor', { Default = self.Library.MainColor });
+		groupbox:AddLabel('Accent color'):AddColorPicker('AccentColor', { Default = self.Library.AccentColor });
+		groupbox:AddLabel('Outline color'):AddColorPicker('OutlineColor', { Default = self.Library.OutlineColor });
+		groupbox:AddLabel('Font color'):AddColorPicker('FontColor', { Default = self.Library.FontColor });
+		groupbox:AddInput('VideoLink', { Text = '.webm Video Background (Link)', Default = self.Library.VideoLink });
+
+		local ThemesArray = {}
+		for Name, Theme in next, self.BuiltInThemes do
+			table.insert(ThemesArray, Name)
+		end
+
+		table.sort(ThemesArray, function(a, b) return self.BuiltInThemes[a][1] < self.BuiltInThemes[b][1] end)
+
+		groupbox:AddDivider()
+
+		groupbox:AddDropdown('ThemeManager_ThemeList', { Text = 'Theme list', Values = ThemesArray, Default = 1 })
+		groupbox:AddButton('Set as default', function()
+			self:SaveDefault(Options.ThemeManager_ThemeList.Value)
+			self.Library:Notify(string.format('Set default theme to %q', Options.ThemeManager_ThemeList.Value))
+		end)
+
+		Options.ThemeManager_ThemeList:OnChanged(function()
+			self:ApplyTheme(Options.ThemeManager_ThemeList.Value)
+		end)
+
+		groupbox:AddDivider()
+
+		groupbox:AddInput('ThemeManager_CustomThemeName', { Text = 'Custom theme name' })
+		groupbox:AddButton('Create theme', function()
+			local name = Options.ThemeManager_CustomThemeName.Value
+			if name:gsub(' ', '') == '' then
+				self.Library:Notify('Invalid theme name (empty)', 2)
+				return
+			end
+
+			self:SaveCustomTheme(name)
+
+			self.Library:Notify(string.format('Created theme %q', name))
+			Options.ThemeManager_CustomThemeList:SetValues(self:ReloadCustomThemes())
+			Options.ThemeManager_CustomThemeList:SetValue(nil)
+		end)
+
+		groupbox:AddDivider()
+
+		groupbox:AddDropdown('ThemeManager_CustomThemeList', { Text = 'Custom themes', Values = self:ReloadCustomThemes(), AllowNull = true, Default = 1 })
+		groupbox:AddButton('Load theme', function()
+			local name = Options.ThemeManager_CustomThemeList.Value
+
+			self:ApplyTheme(name)
+			self.Library:Notify(string.format('Loaded theme %q', name))
+		end)
+		groupbox:AddButton('Overwrite theme', function()
+			local name = Options.ThemeManager_CustomThemeList.Value
+
+			self:SaveCustomTheme(name)
+			self.Library:Notify(string.format('Overwrote config %q', name))
+		end)
+		groupbox:AddButton('Delete theme', function()
+			local name = Options.ThemeManager_CustomThemeList.Value
+
+			local success, err = self:Delete(name)
+			if not success then
+				self.Library:Notify('Failed to delete theme: ' .. err)
+				return
+			end
+
+			self.Library:Notify(string.format('Deleted theme %q', name))
+			Options.ThemeManager_CustomThemeList:SetValues(self:ReloadCustomThemes())
+			Options.ThemeManager_CustomThemeList:SetValue(nil)
+		end)
+		groupbox:AddButton('Refresh list', function()
+			Options.ThemeManager_CustomThemeList:SetValues(self:ReloadCustomThemes())
+			Options.ThemeManager_CustomThemeList:SetValue(nil)
+		end)
+		groupbox:AddButton('Set as default', function()
+			if Options.ThemeManager_CustomThemeList.Value ~= nil and Options.ThemeManager_CustomThemeList.Value ~= '' then
+				self:SaveDefault(Options.ThemeManager_CustomThemeList.Value)
+				self.Library:Notify(string.format('Set default theme to %q', Options.ThemeManager_CustomThemeList.Value))
+			end
+		end)
+		groupbox:AddButton('Reset default', function()
+			local success = pcall(delfile, self.Folder .. '/themes/default.txt')
+			if not success then
+				self.Library:Notify('Failed to reset default: delete file error')
+				return
+			end
+
+			self.Library:Notify('Set default theme to nothing')
+			Options.ThemeManager_CustomThemeList:SetValues(self:ReloadCustomThemes())
+			Options.ThemeManager_CustomThemeList:SetValue(nil)
+		end)
+
+		ThemeManager:LoadDefault()
+
+		local function UpdateTheme()
+			self:ThemeUpdate()
+		end
+
+		Options.BackgroundColor:OnChanged(UpdateTheme)
+		Options.MainColor:OnChanged(UpdateTheme)
+		Options.AccentColor:OnChanged(UpdateTheme)
+		Options.OutlineColor:OnChanged(UpdateTheme)
+		Options.FontColor:OnChanged(UpdateTheme)
+	end
+
+	function ThemeManager:CreateGroupBox(tab)
+		assert(self.Library, 'ThemeManager:CreateGroupBox -> Must set ThemeManager.Library first!')
+		return tab:AddLeftGroupbox('Themes')
+	end
+
+	function ThemeManager:ApplyToTab(tab)
+		assert(self.Library, 'ThemeManager:ApplyToTab -> Must set ThemeManager.Library first!')
+		local groupbox = self:CreateGroupBox(tab)
+		self:CreateThemeManager(groupbox)
+	end
+
+	function ThemeManager:ApplyToGroupbox(groupbox)
+		assert(self.Library, 'ThemeManager:ApplyToGroupbox -> Must set ThemeManager.Library first!')
+		self:CreateThemeManager(groupbox)
+	end
+
+	ThemeManager:BuildFolderTree()
+end
+
+return ThemeManager
