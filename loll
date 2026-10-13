@@ -5243,7 +5243,7 @@ function Library:CreateWindow(...)
                 Tab:ShowTab();
             end;
         end);
-        if #TabContainer:GetChildren() == 1 then
+        if next(Window.Tabs) == nil then
             Tab:ShowTab();
         end;
         Window.Tabs[Name] = Tab;
