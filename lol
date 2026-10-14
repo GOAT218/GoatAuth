@@ -2675,7 +2675,8 @@
 
                                                                     function Funcs:AddSlider(Idx, Info)
                                                                         assert(Info.Default, 'AddSlider: Missing default value.');
-                                                                        assert(Info.Text, 'AddSlider: Missing slider text.');
+                                                                        local NoLabel = self.TableType == 'DependencyBox';
+                                                                        assert(Info.Text or NoLabel, 'AddSlider: Missing slider text.');
                                                                         assert(Info.Min, 'AddSlider: Missing minimum value.');
                                                                         assert(Info.Max, 'AddSlider: Missing maximum value.');
                                                                         assert(Info.Rounding, 'AddSlider: Missing rounding value.');
@@ -2693,7 +2694,7 @@
                                                                         local Groupbox = self;
                                                                         local Container = Groupbox.Container;
 
-                                                                        if not Info.Compact then
+                                                                        if not Info.Compact and not NoLabel then
                                                                             Library:CreateLabel({
                                                                                 Size = UDim2.new(1, 0, 0, 10);
                                                                                 TextSize = 14;
@@ -3352,6 +3353,7 @@
                                                                     function Funcs:AddDependencyBox()
                                                                         local Depbox = {
                                                                             Dependencies = {};
+                                                                            TableType = 'DependencyBox';
                                                                         };
                                                                         
                                                                         local Groupbox = self;
