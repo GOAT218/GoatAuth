@@ -2675,7 +2675,7 @@
 
                                                                     function Funcs:AddSlider(Idx, Info)
                                                                         assert(Info.Default, 'AddSlider: Missing default value.');
-                                                                        local NoLabel = self.TableType == 'DependencyBox';
+                                                                        local NoLabel = Info.NoLabel == true or Info.Text == '';
                                                                         assert(Info.Text or NoLabel, 'AddSlider: Missing slider text.');
                                                                         assert(Info.Min, 'AddSlider: Missing minimum value.');
                                                                         assert(Info.Max, 'AddSlider: Missing maximum value.');
@@ -3353,7 +3353,6 @@
                                                                     function Funcs:AddDependencyBox()
                                                                         local Depbox = {
                                                                             Dependencies = {};
-                                                                            TableType = 'DependencyBox';
                                                                         };
                                                                         
                                                                         local Groupbox = self;
