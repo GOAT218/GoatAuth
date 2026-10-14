@@ -2428,7 +2428,8 @@ do
     end
 
     function Funcs:AddInput(Idx, Info)
-        assert(Info.Text, 'AddInput: Missing `Text` string.')
+        local NoLabel = Info.NoLabel == true or Info.Text == '';
+        assert(Info.Text or NoLabel, 'AddInput: Missing `Text` string.')
 
         local Textbox = {
             Value = Info.Default or '';
@@ -2440,16 +2441,18 @@ do
         local Groupbox = self;
         local Container = Groupbox.Container;
 
-        local InputLabel = Library:CreateLabel({
-            Size = UDim2.new(1, 0, 0, 15);
-            TextSize = Library.FontSize;
-            Text = Info.Text;
-            TextXAlignment = Enum.TextXAlignment.Left;
-            ZIndex = 5;
-            Parent = Container;
-        });
-
-        Groupbox:AddBlank(1);
+        if not NoLabel then
+            local InputLabel = Library:CreateLabel({
+                Size = UDim2.new(1, 0, 0, 15);
+                TextSize = Library.FontSize;
+                Text = Info.Text;
+                TextXAlignment = Enum.TextXAlignment.Left;
+                ZIndex = 5;
+                Parent = Container;
+            });
+            
+            Groupbox:AddBlank(1);
+        end
 
         local TextBoxOuter = Library:Create('Frame', {
             BackgroundColor3 = Color3.new(0, 0, 0);
@@ -2936,6 +2939,8 @@ do
         assert(Info.Values, 'AddDropdown: Missing dropdown value list.');
         assert(Info.AllowNull or Info.Default, 'AddDropdown: Missing default value. Pass `AllowNull` as true if this was intentional.')
 
+        local NoLabel = Info.NoLabel == true or Info.Text == '';
+
         if (not Info.Text) then
             Info.Compact = true;
         end;
@@ -2953,7 +2958,7 @@ do
         local Container = Groupbox.Container;
 
         local RelativeOffset = 0;
-        if not Info.Compact then
+        if not Info.Compact and not NoLabel then
             local DropdownLabel = Library:CreateLabel({
                 Size = UDim2.new(1, 0, 0, 10);
                 TextSize = Library.FontSize;
