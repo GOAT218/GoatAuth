@@ -2736,7 +2736,7 @@ do
         assert(Info.Min, 'AddSlider: Missing minimum value.');
         assert(Info.Max, 'AddSlider: Missing maximum value.');
         assert(Info.Rounding, 'AddSlider: Missing rounding value.');
-        local NoLabel = Info.NoLabel or Info.Text == '';
+        local NoLabel = Info.NoLabel or Info.Text == '' or self.TableType == 'DependencyBox';
         local Slider = {
             Value = Info.Default;
             Min = Info.Min;
@@ -3354,6 +3354,7 @@ do
     function Funcs:AddDependencyBox()
         local Depbox = {
             Dependencies = {};
+            TableType = 'DependencyBox';
         };
         
         local Groupbox = self;
