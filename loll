@@ -2428,7 +2428,7 @@ do
     end
 
     function Funcs:AddInput(Idx, Info)
-        local NoLabel = Info.NoLabel == true or Info.Text == '';
+        local NoLabel = Info.NoLabel or Info.Text == '';
         assert(Info.Text or NoLabel, 'AddInput: Missing `Text` string.')
 
         local Textbox = {
@@ -2442,7 +2442,7 @@ do
         local Container = Groupbox.Container;
 
         if not NoLabel then
-            local InputLabel = Library:CreateLabel({
+            Library:CreateLabel({
                 Size = UDim2.new(1, 0, 0, 15);
                 TextSize = Library.FontSize;
                 Text = Info.Text;
@@ -2450,7 +2450,7 @@ do
                 ZIndex = 5;
                 Parent = Container;
             });
-            
+
             Groupbox:AddBlank(1);
         end
 
@@ -2734,12 +2734,12 @@ do
     end;
 
     function Funcs:AddSlider(Idx, Info)
+        local NoLabel = Info.NoLabel or Info.Text == '';
         assert(Info.Default, 'AddSlider: Missing default value.');
-        assert(Info.Text or Info.NoLabel, 'AddSlider: Missing slider text.');
+        assert(Info.Text or NoLabel, 'AddSlider: Missing slider text.');
         assert(Info.Min, 'AddSlider: Missing minimum value.');
         assert(Info.Max, 'AddSlider: Missing maximum value.');
         assert(Info.Rounding, 'AddSlider: Missing rounding value.');
-        local NoLabel = Info.NoLabel == true or Info.Text == '';
         local Slider = {
             Value = Info.Default;
             Min = Info.Min;
@@ -2752,19 +2752,6 @@ do
 
         local Groupbox = self;
         local Container = Groupbox.Container;
-        if not Info.Compact and not NoLabel then
-            Library:CreateLabel({
-                Size = UDim2.new(1, 0, 0, 10);
-                TextSize = Library.FontSize;
-                Text = Info.Text;
-                TextXAlignment = Enum.TextXAlignment.Left;
-                TextYAlignment = Enum.TextYAlignment.Bottom;
-                ZIndex = 5;
-                Parent = Container;
-            });
-            Groupbox:AddBlank(3);
-        end
-
         local SliderOuter = Library:Create('Frame', {
             BackgroundColor3 = Color3.new(0, 0, 0);
             BorderColor3 = Color3.new(0, 0, 0);
@@ -2832,7 +2819,7 @@ do
 
         function Slider:Display()
             local Suffix = Info.Suffix or '';
-            if Info.Compact and not NoLabel then
+            if not NoLabel then
                 DisplayLabel.Text = Info.Text .. ': ' .. Slider.Value .. Suffix
             elseif Info.HideMax then
                 DisplayLabel.Text = string.format('%s', Slider.Value .. Suffix)
@@ -2939,11 +2926,10 @@ do
         assert(Info.Values, 'AddDropdown: Missing dropdown value list.');
         assert(Info.AllowNull or Info.Default, 'AddDropdown: Missing default value. Pass `AllowNull` as true if this was intentional.')
 
-        local NoLabel = Info.NoLabel == true or Info.Text == '';
-
         if (not Info.Text) then
             Info.Compact = true;
         end;
+        local NoLabel = Info.NoLabel or Info.Text == '';
 
         local Dropdown = {
             Values = Info.Values;
