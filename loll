@@ -5360,6 +5360,7 @@ function Library:CreateWindow(...)
             ZIndex = 2;
             Parent = TabFrame;
         });
+        local FullSide = nil;
         Library:Create('UIListLayout', {
             Padding = UDim.new(0, 8);
             FillDirection = Enum.FillDirection.Vertical;
@@ -5414,7 +5415,7 @@ function Library:CreateWindow(...)
                 BorderMode = Enum.BorderMode.Inset;
                 Size = UDim2.new(1, 0, 0, 507 + 2);
                 ZIndex = 2;
-                Parent = Info.Side == 1 and LeftSide or RightSide;
+                Parent = Info.Parent or (Info.Side == 1 and LeftSide or RightSide);
             });
             Library:AddToRegistry(BoxOuter, {
                 BackgroundColor3 = 'BackgroundColor';
@@ -5493,6 +5494,45 @@ function Library:CreateWindow(...)
 
         function Tab:AddRightGroupbox(Name)
             return Tab:AddGroupbox({ Side = 2; Name = Name; });
+        end;
+
+        function Tab:AddFullGroupbox(Name)
+            if not FullSide then
+                FullSide = Library:Create('ScrollingFrame', {
+                    Active = true;
+                    BackgroundTransparency = 1;
+                    BorderSizePixel = 0;
+                    Position = UDim2.new(0, 7, 0, 7);
+                    Size = UDim2.new(1, -16, 1, -16);
+                    CanvasSize = UDim2.fromOffset(0, 0);
+                    BottomImage = '';
+                    TopImage = '';
+                    ScrollBarThickness = 0;
+                    ZIndex = 2;
+                    Parent = TabFrame;
+                });
+                local Layout = Library:Create('UIListLayout', {
+                    Padding = UDim.new(0, 8);
+                    FillDirection = Enum.FillDirection.Vertical;
+                    SortOrder = Enum.SortOrder.LayoutOrder;
+                    HorizontalAlignment = Enum.HorizontalAlignment.Center;
+                    Parent = FullSide;
+                });
+                Layout:GetPropertyChangedSignal('AbsoluteContentSize'):Connect(function()
+                    FullSide.CanvasSize = UDim2.fromOffset(0, Layout.AbsoluteContentSize.Y);
+                end);
+            end;
+
+            LeftSide.Visible = false;
+            RightSide.Visible = false;
+            FullSide.Visible = true;
+            return Tab:AddGroupbox({ Side = 3; Name = Name; Parent = FullSide; });
+        end;
+
+        function Tab:GetSides()
+            local Sides = { LeftSide, RightSide };
+            if FullSide then table.insert(Sides, FullSide); end;
+            return Sides;
         end;
 
         function Tab:AddTabbox(Info)
