@@ -3532,6 +3532,7 @@ do
         local Groupbox = self;
         local Container = Groupbox.Container;
         Groupbox.Elements = Groupbox.Elements or {};
+        local Columns = Info.Columns or 5;
         local CellSize = Info.CellSize or Vector2.new(91, 91);
         local CellPadding = Info.CellPadding or Vector2.new(6, 6);
         local Height = ternary(typeof(Info.Height) == 'number' and Info.Height > 0, Info.Height, 266);
@@ -3548,7 +3549,7 @@ do
 
         local Holder = Library:Create('Frame', {
             BackgroundTransparency = 1;
-            Size = UDim2.new(1, -4, 0, Height);
+            Size = UDim2.new(1, 0, 0, Height);
             Visible = Grid.Visible;
             Parent = Container;
         });
@@ -3578,16 +3579,17 @@ do
         Library:Create('UIPadding', {
             PaddingTop = UDim.new(0, 4);
             PaddingBottom = UDim.new(0, 4);
-            PaddingLeft = UDim.new(0, 4);
-            PaddingRight = UDim.new(0, 6);
+            PaddingLeft = UDim.new(0, 0);
+            PaddingRight = UDim.new(0, 0);
             Parent = Scroll;
         });
 
+        local ResponsiveCellWidth = -(CellPadding.X * (Columns - 1) / Columns);
         Library:Create('UIGridLayout', {
             CellPadding = UDim2.fromOffset(CellPadding.X, CellPadding.Y);
-            CellSize = UDim2.fromOffset(CellSize.X, CellSize.Y);
+            CellSize = UDim2.new(1 / Columns, ResponsiveCellWidth, 0, CellSize.Y);
             FillDirection = Enum.FillDirection.Horizontal;
-            FillDirectionMaxCells = Info.Columns or 0;
+            FillDirectionMaxCells = Columns;
             HorizontalAlignment = Enum.HorizontalAlignment.Left;
             SortOrder = Enum.SortOrder.LayoutOrder;
             Parent = Scroll;
@@ -3773,7 +3775,7 @@ do
         function Grid:SetHeight(NewHeight)
             assert(typeof(NewHeight) == 'number' and NewHeight > 0, 'Height must be greater than 0.');
             Height = NewHeight;
-            Holder.Size = UDim2.new(1, -4, 0, Height);
+            Holder.Size = UDim2.new(1, 0, 0, Height);
             Groupbox:Resize();
         end;
 
