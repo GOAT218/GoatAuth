@@ -3543,9 +3543,19 @@ do
             Selected = Info.Default;
             Items = {};
             Cells = {};
+            Favorites = {};
             Visible = ternary(Info.Visible ~= nil, Info.Visible, true);
             Callback = Info.Callback or function() end;
+            FavoriteCallback = Info.FavoriteCallback or function() end;
         };
+
+        if typeof(Info.Favorites) == 'table' then
+            for Key, Value in pairs(Info.Favorites) do
+                local Id = typeof(Key) == 'number' and Value or Key;
+                local Enabled = typeof(Key) == 'number' or Value == true;
+                if Enabled then Grid.Favorites[Id] = true; end;
+            end;
+        end;
 
         local Holder = Library:Create('Frame', {
             BackgroundTransparency = 1;
@@ -3669,6 +3679,20 @@ do
             end;
         end;
 
+        local function ApplyFavorite(Id)
+            local Cell = Grid.Cells[Id];
+            if not Cell then return; end;
+            local Favorite = Grid.Favorites[Id] == true;
+            Cell.Frame.LayoutOrder = ternary(Favorite, Cell.Index - 100000, Cell.Index);
+            if Cell.FavoriteButton then
+                Cell.FavoriteButton.Text = ternary(Favorite, '★', '☆');
+                Cell.FavoriteButton.TextColor3 = ternary(Favorite, Library.AccentColor, Library.FontColor);
+                if Library.RegistryMap[Cell.FavoriteButton] then
+                    Library.RegistryMap[Cell.FavoriteButton].Properties.TextColor3 = ternary(Favorite, 'AccentColor', 'FontColor');
+                end;
+            end;
+        end;
+
         function Grid:SetSelected(Id, FireCallback)
             Grid.Selected = Id;
             ApplySelection();
@@ -3680,6 +3704,37 @@ do
 
         function Grid:GetSelected()
             return Grid.Selected;
+        end;
+
+        function Grid:SetFavorite(Id, Favorite, FireCallback)
+            Favorite = Favorite == true;
+            if Favorite then Grid.Favorites[Id] = true else Grid.Favorites[Id] = nil end;
+            ApplyFavorite(Id);
+            if FireCallback then
+                local Cell = Grid.Cells[Id];
+                Library:SafeCallback(Grid.FavoriteCallback, Id, Favorite, Cell and Cell.Item);
+            end;
+        end;
+
+        function Grid:ToggleFavorite(Id, FireCallback)
+            Grid:SetFavorite(Id, not Grid.Favorites[Id], FireCallback);
+        end;
+
+        function Grid:IsFavorite(Id)
+            return Grid.Favorites[Id] == true;
+        end;
+
+        function Grid:GetFavorites()
+            local Favorites = {};
+            for Id, Favorite in pairs(Grid.Favorites) do
+                if Favorite then table.insert(Favorites, Id); end;
+            end;
+            table.sort(Favorites, function(A, B)
+                local CellA, CellB = Grid.Cells[A], Grid.Cells[B];
+                if CellA and CellB then return CellA.Index < CellB.Index; end;
+                return tostring(A) < tostring(B);
+            end);
+            return Favorites;
         end;
 
         function Grid:Clear()
@@ -3695,6 +3750,7 @@ do
             Grid.Items = Items or {};
             for Index, Item in ipairs(Grid.Items) do
                 local Id = Item.Id or Item.Text or tostring(Index);
+                if Item.Favorite == true then Grid.Favorites[Id] = true; end;
                 local Frame = Library:Create('Frame', {
                     BackgroundColor3 = Library.OutlineColor;
                     BorderSizePixel = 0;
@@ -3766,6 +3822,33 @@ do
                     ZIndex = 10;
                     Parent = Frame;
                 });
+
+                local FavoriteButton = nil;
+                if Info.Favoritable ~= false and Item.Favoritable ~= false then
+                    FavoriteButton = Library:Create('TextButton', {
+                        AnchorPoint = Vector2.new(1, 0);
+                        AutoButtonColor = false;
+                        BackgroundColor3 = Library.BackgroundColor;
+                        BackgroundTransparency = 0.15;
+                        BorderSizePixel = 0;
+                        Font = Library.Font;
+                        Position = UDim2.new(1, -4, 0, 4);
+                        Size = UDim2.fromOffset(22, 22);
+                        Text = '☆';
+                        TextColor3 = Library.FontColor;
+                        TextSize = 17;
+                        ZIndex = 11;
+                        Parent = Frame;
+                    });
+                    Library:Create('UICorner', { CornerRadius = UDim.new(0, 5); Parent = FavoriteButton; });
+                    Library:AddToRegistry(FavoriteButton, {
+                        BackgroundColor3 = 'BackgroundColor';
+                        TextColor3 = 'FontColor';
+                    });
+                    Library:GiveSignal(FavoriteButton.MouseButton1Click:Connect(function()
+                        Grid:ToggleFavorite(Id, true);
+                    end));
+                end;
                 if typeof(Item.Tooltip) == 'string' then Library:AddToolTip(Item.Tooltip, Button); end;
                 Library:GiveSignal(Button.MouseButton1Click:Connect(function()
                     Grid.Selected = Id;
@@ -3773,7 +3856,8 @@ do
                     Library:SafeCallback(Grid.Callback, Id, Item);
                 end));
 
-                Grid.Cells[Id] = { Frame = Frame; Inner = Inner; Stroke = Stroke; Preview = Preview; Caption = Caption; Button = Button; Item = Item; };
+                Grid.Cells[Id] = { Frame = Frame; Inner = Inner; Stroke = Stroke; Preview = Preview; Caption = Caption; Button = Button; FavoriteButton = FavoriteButton; Item = Item; Index = Index; };
+                ApplyFavorite(Id);
             end;
             ApplySelection();
             Groupbox:Resize();
