@@ -3531,6 +3531,7 @@ do
         Info = Info or {};
         local Groupbox = self;
         local Container = Groupbox.Container;
+        Groupbox.Elements = Groupbox.Elements or {};
         local CellSize = Info.CellSize or Vector2.new(91, 91);
         local CellPadding = Info.CellPadding or Vector2.new(6, 6);
         local Height = ternary(typeof(Info.Height) == 'number' and Info.Height > 0, Info.Height, 266);
