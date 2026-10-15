@@ -5093,27 +5093,73 @@ function Library:CreateWindow(...)
         ZIndex = 1;
         Parent = Inner;
     });
+    local AddedTitleText = type(Config.AddedTitle) == 'string' and Config.AddedTitle
+        or (type(Config.GameName) == 'string' and Config.GameName or '')
+    local AddedTitleColor = typeof(Config.AddedTitleColor) == 'Color3' and Config.AddedTitleColor
+        or (typeof(Config.GameNameColor) == 'Color3' and Config.GameNameColor or Library.AccentColor)
+    local HasCustomAddedTitleColor = typeof(Config.AddedTitleColor) == 'Color3' or typeof(Config.GameNameColor) == 'Color3'
     local MapNameLabel = Library:CreateLabel({
         AnchorPoint = Vector2.new(1, 0),
         Position = UDim2.new(1, -7, 0, 0),
         Size = UDim2.new(0, 0, 0, 25),
-        Text = 'RIVALS',
-        TextColor3 = Library.AccentColor,
+        Text = AddedTitleText,
+        TextColor3 = AddedTitleColor,
         TextXAlignment = Enum.TextXAlignment.Right,
         ZIndex = 1,
         Parent = Inner;
     });
-    Library:AddToRegistry(MapNameLabel, {
-        TextColor3 = 'AccentColor';
-    });
-    task.spawn(function()
+    if HasCustomAddedTitleColor then
+        Library:RemoveFromRegistry(MapNameLabel)
+    else
+        Library:AddToRegistry(MapNameLabel, {
+            TextColor3 = 'AccentColor';
+        });
+    end
+
+    local AutoGameNameRequest = 0
+    local function ShowAutomaticGameName()
+        AutoGameNameRequest += 1
+        local requestId = AutoGameNameRequest
+        MapNameLabel.Text = ''
+        task.spawn(function()
         local success, result = pcall(function()
             return game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId)
         end)
-        if success and type(result) == "table" and result.Name then
+        if requestId ~= AutoGameNameRequest then return end
+        if success and type(result) == "table" and type(result.Name) == 'string' and result.Name ~= '' then
             MapNameLabel.Text = result.Name
+        else
+            MapNameLabel.Text = game.Name ~= 'Game' and game.Name or ('Place ' .. tostring(game.PlaceId))
         end
-    end)
+        end)
+    end
+
+    if AddedTitleText == '' then
+        ShowAutomaticGameName()
+    end
+
+    function Window:SetAddedTitle(Title)
+        AutoGameNameRequest += 1
+        if type(Title) == 'string' and Title ~= '' then
+            MapNameLabel.Text = Title
+        else
+            ShowAutomaticGameName()
+        end
+    end
+
+    function Window:SetAddedTitleColor(Color)
+        if typeof(Color) == 'Color3' then
+            Library:RemoveFromRegistry(MapNameLabel)
+            MapNameLabel.TextColor3 = Color
+        else
+            Library:AddToRegistry(MapNameLabel, { TextColor3 = 'AccentColor' })
+            MapNameLabel.TextColor3 = Library.AccentColor
+        end
+    end
+
+    Window.SetGameName = Window.SetAddedTitle
+    Window.SetGameNameColor = Window.SetAddedTitleColor
+    Window.AddedTitleLabel = MapNameLabel
 
 
     local TabBarOuter = Library:Create('Frame', {
