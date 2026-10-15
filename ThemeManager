@@ -161,19 +161,6 @@ local ThemeManager = {} do
 		web.ZIndex = 41
 		web.Parent = layer
 
-		local pumpkin = Instance.new('ImageLabel')
-		pumpkin.Name = 'HalloweenBackdrop'
-		pumpkin.AnchorPoint = Vector2.new(0.5, 0.5)
-		pumpkin.BackgroundTransparency = 1
-		pumpkin.Position = UDim2.new(0.72, 0, 0.68, 0)
-		pumpkin.Size = UDim2.fromOffset(300, 300)
-		pumpkin.Image = 'rbxassetid://85702641849778'
-		pumpkin.ImageColor3 = Color3.fromRGB(255, 130, 0)
-		pumpkin.ImageTransparency = 0.78
-		pumpkin.Rotation = -8
-		pumpkin.ZIndex = 42
-		pumpkin.Parent = layer
-
 		local decorations = {}
 		local decorationAssets = {
 			'rbxassetid://105119424246549', 'rbxassetid://121960138386865',
@@ -203,8 +190,6 @@ local ThemeManager = {} do
 		local connection = RunService.RenderStepped:Connect(function(delta)
 			if not layer.Parent then return end
 			elapsed += delta
-			pumpkin.Position = UDim2.new(0.72, 0, 0.68, math.sin(elapsed * 1.1) * 7)
-			pumpkin.Rotation = -8 + math.sin(elapsed * 0.8) * 3
 			web.Position = UDim2.fromOffset(math.sin(elapsed * 0.7) * 2, math.cos(elapsed * 0.8) * 2)
 			web.ImageTransparency = 0.13 + math.abs(math.sin(elapsed * 0.9)) * 0.07
 			for _, item in ipairs(decorations) do
