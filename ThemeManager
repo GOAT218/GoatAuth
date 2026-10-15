@@ -151,91 +151,52 @@ local ThemeManager = {} do
 		layer.Parent = holder
 		self.HalloweenLayer = layer
 
-		local function line(parent, x1, y1, x2, y2, transparency)
-			local dx, dy = x2 - x1, y2 - y1
-			local frame = Instance.new('Frame')
-			frame.AnchorPoint = Vector2.new(0.5, 0.5)
-			frame.BackgroundColor3 = Color3.fromRGB(224, 228, 232)
-			frame.BackgroundTransparency = transparency or 0.18
-			frame.BorderSizePixel = 0
-			frame.Position = UDim2.fromOffset((x1 + x2) / 2, (y1 + y2) / 2)
-			frame.Rotation = math.deg(math.atan2(dy, dx))
-			frame.Size = UDim2.fromOffset(math.sqrt(dx * dx + dy * dy), 1)
-			frame.ZIndex = 41
-			frame.Parent = parent
-			return frame
-		end
-
-		local web = Instance.new('Frame')
-		web.Name = 'SpiderWeb'
+		local web = Instance.new('ImageLabel')
+		web.Name = 'HalloweenWeb'
 		web.BackgroundTransparency = 1
-		web.Size = UDim2.fromOffset(155, 140)
+		web.Image = 'rbxassetid://75731283667788'
+		web.ImageTransparency = 0.15
+		web.Position = UDim2.fromOffset(0, 0)
+		web.Size = UDim2.fromOffset(400, 400)
 		web.ZIndex = 41
 		web.Parent = layer
-		for _, point in ipairs({ {155, 0}, {151, 38}, {138, 78}, {110, 115}, {72, 140}, {30, 140}, {0, 132} }) do
-			line(web, 0, 0, point[1], point[2], 0.12)
-		end
-		local angles = { 0, 15, 30, 45, 60, 75, 90 }
-		for radius = 26, 130, 24 do
-			local previous
-			for _, angle in ipairs(angles) do
-				local radians = math.rad(angle)
-				local point = Vector2.new(math.cos(radians) * radius, math.sin(radians) * radius)
-				if previous then line(web, previous.X, previous.Y, point.X, point.Y, 0.22) end
-				previous = point
-			end
-		end
 
-		local pumpkin = Instance.new('TextLabel')
-		pumpkin.Name = 'Pumpkin'
+		local pumpkin = Instance.new('ImageLabel')
+		pumpkin.Name = 'HalloweenBackdrop'
 		pumpkin.AnchorPoint = Vector2.new(0.5, 0.5)
 		pumpkin.BackgroundTransparency = 1
 		pumpkin.Position = UDim2.new(0.72, 0, 0.68, 0)
-		pumpkin.Size = UDim2.fromOffset(200, 200)
-		pumpkin.Font = Enum.Font.GothamBold
-		pumpkin.Text = '🎃'
-		pumpkin.TextColor3 = Color3.fromRGB(255, 104, 0)
-		pumpkin.TextSize = 138
-		pumpkin.TextStrokeColor3 = Color3.fromRGB(70, 20, 0)
-		pumpkin.TextStrokeTransparency = 0.18
-		pumpkin.TextTransparency = 0.48
+		pumpkin.Size = UDim2.fromOffset(300, 300)
+		pumpkin.Image = 'rbxassetid://85702641849778'
+		pumpkin.ImageColor3 = Color3.fromRGB(255, 130, 0)
+		pumpkin.ImageTransparency = 0.78
 		pumpkin.Rotation = -8
 		pumpkin.ZIndex = 42
 		pumpkin.Parent = layer
 
-		local spider = Instance.new('TextLabel')
-		spider.BackgroundTransparency = 1
-		spider.Position = UDim2.fromOffset(82, 104)
-		spider.Size = UDim2.fromOffset(24, 24)
-		spider.Font = Enum.Font.GothamBold
-		spider.Text = '✦'
-		spider.TextColor3 = Color3.fromRGB(255, 105, 0)
-		spider.TextSize = 19
-		spider.TextStrokeTransparency = 0.2
-		spider.ZIndex = 43
-		spider.Parent = web
-		line(web, 94, 74, 94, 113, 0.18)
-
-		local bats = {}
+		local decorations = {}
+		local decorationAssets = {
+			'rbxassetid://105119424246549', 'rbxassetid://121960138386865',
+			'rbxassetid://106769098505476', 'rbxassetid://71972164206010',
+		}
 		for index, data in ipairs({
-			{ 0.25, 0.20, 22, 0.0 }, { 0.55, 0.31, 17, 1.7 },
-			{ 0.84, 0.17, 25, 3.1 }, { 0.90, 0.72, 18, 4.4 },
-			{ 0.40, 0.83, 15, 5.2 },
+			{ 0.25, 0.20, 42, 0.0 }, { 0.55, 0.31, 36, 1.7 },
+			{ 0.84, 0.17, 48, 3.1 }, { 0.90, 0.72, 39, 4.4 },
+			{ 0.40, 0.83, 33, 5.2 }, { 0.69, 0.52, 45, 2.5 },
+			{ 0.18, 0.63, 37, 3.8 }, { 0.78, 0.86, 41, 5.8 },
 		}) do
-			local bat = Instance.new('TextLabel')
-			bat.Name = 'Bat' .. index
-			bat.AnchorPoint = Vector2.new(0.5, 0.5)
-			bat.BackgroundTransparency = 1
-			bat.Position = UDim2.new(data[1], 0, data[2], 0)
-			bat.Size = UDim2.fromOffset(data[3] * 2, data[3])
-			bat.Font = Enum.Font.GothamBold
-			bat.Text = '⌁'
-			bat.TextColor3 = Color3.fromRGB(255, 105, 0)
-			bat.TextSize = data[3]
-			bat.TextStrokeTransparency = 0.3
-			bat.ZIndex = 43
-			bat.Parent = layer
-			table.insert(bats, { Object = bat, X = data[1], Y = data[2], Phase = data[4] })
+			local image = Instance.new('ImageLabel')
+			image.Name = 'HalloweenDecoration' .. index
+			image.AnchorPoint = Vector2.new(0.5, 0.5)
+			image.BackgroundTransparency = 1
+			image.Position = UDim2.new(data[1], 0, data[2], 0)
+			image.Size = UDim2.fromOffset(data[3], data[3])
+			image.Image = decorationAssets[((index - 1) % #decorationAssets) + 1]
+			image.ImageColor3 = Color3.fromRGB(255, 130, 0)
+			image.ImageTransparency = 0.08 + ((index % 3) * 0.1)
+			image.ZIndex = 43
+			image.Parent = layer
+			table.insert(decorations, { Object = image, X = data[1], Y = data[2], Phase = data[4] })
 		end
 
 		local elapsed = 0
@@ -244,12 +205,13 @@ local ThemeManager = {} do
 			elapsed += delta
 			pumpkin.Position = UDim2.new(0.72, 0, 0.68, math.sin(elapsed * 1.1) * 7)
 			pumpkin.Rotation = -8 + math.sin(elapsed * 0.8) * 3
-			spider.Position = UDim2.fromOffset(82, 104 + math.sin(elapsed * 1.8) * 5)
-			for _, item in ipairs(bats) do
+			web.Position = UDim2.fromOffset(math.sin(elapsed * 0.7) * 2, math.cos(elapsed * 0.8) * 2)
+			web.ImageTransparency = 0.13 + math.abs(math.sin(elapsed * 0.9)) * 0.07
+			for _, item in ipairs(decorations) do
 				local wave = elapsed * 0.75 + item.Phase
 				item.Object.Position = UDim2.new(item.X, math.sin(wave * 0.7) * 18, item.Y, math.sin(wave) * 10)
 				item.Object.Rotation = math.sin(wave * 1.8) * 18
-				item.Object.TextTransparency = 0.08 + math.abs(math.sin(wave * 2.4)) * 0.18
+				item.Object.ImageTransparency = 0.05 + math.abs(math.sin(wave * 2.4)) * 0.28
 			end
 		end)
 		if self.Library.GiveSignal then self.Library:GiveSignal(connection) end
