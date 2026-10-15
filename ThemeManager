@@ -14,6 +14,7 @@ local httprequest = request or http_request or (http and http.request)
 local getassetfunc = getcustomasset
 
 local HttpService = cloneref(game:GetService('HttpService'));
+local RunService = cloneref(game:GetService('RunService'));
 local isfolder, isfile, listfiles = isfolder, isfile, listfiles;
 
 local assert = function(condition, errorMessage)
@@ -90,6 +91,7 @@ local ThemeManager = {} do
 		['Vampire'] = { 30, { FontColor = 'ffffff', MainColor = '1a0000', AccentColor = 'e60000', BackgroundColor = '0d0000', OutlineColor = '330000' } },
 		['Obsidian'] = { 31, { FontColor = 'ffffff', MainColor = '0a0a0a', AccentColor = '00ff88', BackgroundColor = '050505', OutlineColor = '1a1a1a' } },
 		['UwUWare'] = { 32, { FontColor = 'ffffff', MainColor = '181818', AccentColor = 'f9a9d4', BackgroundColor = '181818', OutlineColor = '181818' } },
+		['Halloween'] = { 33, { FontColor = 'f1ebe1', MainColor = '140f0d', AccentColor = 'ff6900', BackgroundColor = '0e0c0c', OutlineColor = '5b3012' } },
 	}
 
 	function ApplyBackgroundVideo(videoLink)
@@ -130,6 +132,129 @@ local ThemeManager = {} do
 		self.Library = library
 	end
 
+	function ThemeManager:SetHalloweenDecorations(enabled)
+		enabled = enabled == true
+		if self.HalloweenLayer then
+			self.HalloweenLayer.Visible = enabled
+			return
+		end
+		if not enabled then return end
+
+		local holder = self.Library and self.Library.Window and self.Library.Window.Holder
+		if not holder then return end
+
+		local layer = Instance.new('Frame')
+		layer.Name = 'HalloweenThemeLayer'
+		layer.BackgroundTransparency = 1
+		layer.Size = UDim2.fromScale(1, 1)
+		layer.ZIndex = 40
+		layer.Parent = holder
+		self.HalloweenLayer = layer
+
+		local function line(parent, x1, y1, x2, y2, transparency)
+			local dx, dy = x2 - x1, y2 - y1
+			local frame = Instance.new('Frame')
+			frame.AnchorPoint = Vector2.new(0.5, 0.5)
+			frame.BackgroundColor3 = Color3.fromRGB(224, 228, 232)
+			frame.BackgroundTransparency = transparency or 0.18
+			frame.BorderSizePixel = 0
+			frame.Position = UDim2.fromOffset((x1 + x2) / 2, (y1 + y2) / 2)
+			frame.Rotation = math.deg(math.atan2(dy, dx))
+			frame.Size = UDim2.fromOffset(math.sqrt(dx * dx + dy * dy), 1)
+			frame.ZIndex = 41
+			frame.Parent = parent
+			return frame
+		end
+
+		local web = Instance.new('Frame')
+		web.Name = 'SpiderWeb'
+		web.BackgroundTransparency = 1
+		web.Size = UDim2.fromOffset(155, 140)
+		web.ZIndex = 41
+		web.Parent = layer
+		for _, point in ipairs({ {155, 0}, {151, 38}, {138, 78}, {110, 115}, {72, 140}, {30, 140}, {0, 132} }) do
+			line(web, 0, 0, point[1], point[2], 0.12)
+		end
+		local angles = { 0, 15, 30, 45, 60, 75, 90 }
+		for radius = 26, 130, 24 do
+			local previous
+			for _, angle in ipairs(angles) do
+				local radians = math.rad(angle)
+				local point = Vector2.new(math.cos(radians) * radius, math.sin(radians) * radius)
+				if previous then line(web, previous.X, previous.Y, point.X, point.Y, 0.22) end
+				previous = point
+			end
+		end
+
+		local pumpkin = Instance.new('TextLabel')
+		pumpkin.Name = 'Pumpkin'
+		pumpkin.AnchorPoint = Vector2.new(0.5, 0.5)
+		pumpkin.BackgroundTransparency = 1
+		pumpkin.Position = UDim2.new(0.72, 0, 0.68, 0)
+		pumpkin.Size = UDim2.fromOffset(200, 200)
+		pumpkin.Font = Enum.Font.GothamBold
+		pumpkin.Text = '🎃'
+		pumpkin.TextColor3 = Color3.fromRGB(255, 104, 0)
+		pumpkin.TextSize = 138
+		pumpkin.TextStrokeColor3 = Color3.fromRGB(70, 20, 0)
+		pumpkin.TextStrokeTransparency = 0.18
+		pumpkin.TextTransparency = 0.48
+		pumpkin.Rotation = -8
+		pumpkin.ZIndex = 42
+		pumpkin.Parent = layer
+
+		local spider = Instance.new('TextLabel')
+		spider.BackgroundTransparency = 1
+		spider.Position = UDim2.fromOffset(82, 104)
+		spider.Size = UDim2.fromOffset(24, 24)
+		spider.Font = Enum.Font.GothamBold
+		spider.Text = '✦'
+		spider.TextColor3 = Color3.fromRGB(255, 105, 0)
+		spider.TextSize = 19
+		spider.TextStrokeTransparency = 0.2
+		spider.ZIndex = 43
+		spider.Parent = web
+		line(web, 94, 74, 94, 113, 0.18)
+
+		local bats = {}
+		for index, data in ipairs({
+			{ 0.25, 0.20, 22, 0.0 }, { 0.55, 0.31, 17, 1.7 },
+			{ 0.84, 0.17, 25, 3.1 }, { 0.90, 0.72, 18, 4.4 },
+			{ 0.40, 0.83, 15, 5.2 },
+		}) do
+			local bat = Instance.new('TextLabel')
+			bat.Name = 'Bat' .. index
+			bat.AnchorPoint = Vector2.new(0.5, 0.5)
+			bat.BackgroundTransparency = 1
+			bat.Position = UDim2.new(data[1], 0, data[2], 0)
+			bat.Size = UDim2.fromOffset(data[3] * 2, data[3])
+			bat.Font = Enum.Font.GothamBold
+			bat.Text = '⌁'
+			bat.TextColor3 = Color3.fromRGB(255, 105, 0)
+			bat.TextSize = data[3]
+			bat.TextStrokeTransparency = 0.3
+			bat.ZIndex = 43
+			bat.Parent = layer
+			table.insert(bats, { Object = bat, X = data[1], Y = data[2], Phase = data[4] })
+		end
+
+		local elapsed = 0
+		local connection = RunService.RenderStepped:Connect(function(delta)
+			if not layer.Parent then return end
+			elapsed += delta
+			pumpkin.Position = UDim2.new(0.72, 0, 0.68, math.sin(elapsed * 1.1) * 7)
+			pumpkin.Rotation = -8 + math.sin(elapsed * 0.8) * 3
+			spider.Position = UDim2.fromOffset(82, 104 + math.sin(elapsed * 1.8) * 5)
+			for _, item in ipairs(bats) do
+				local wave = elapsed * 0.75 + item.Phase
+				item.Object.Position = UDim2.new(item.X, math.sin(wave * 0.7) * 18, item.Y, math.sin(wave) * 10)
+				item.Object.Rotation = math.sin(wave * 1.8) * 18
+				item.Object.TextTransparency = 0.08 + math.abs(math.sin(wave * 2.4)) * 0.18
+			end
+		end)
+		if self.Library.GiveSignal then self.Library:GiveSignal(connection) end
+	end
+
 	function ThemeManager:GetPaths()
 		local paths = {}
 		local parts = self.Folder:split('/')
@@ -166,6 +291,8 @@ local ThemeManager = {} do
 		local data = customThemeData or self.BuiltInThemes[theme]
 
 		if not data then return end
+
+		self:SetHalloweenDecorations(theme == 'Halloween')
 
 		if self.Library.InnerVideoBackground ~= nil then
 			self.Library.InnerVideoBackground.Visible = false
@@ -439,3 +566,4 @@ local ThemeManager = {} do
 end
 
 return ThemeManager
+
