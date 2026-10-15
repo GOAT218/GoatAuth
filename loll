@@ -3584,7 +3584,8 @@ do
             Parent = Scroll;
         });
 
-        local ResponsiveCellWidth = -(CellPadding.X * (Columns - 1) / Columns);
+        -- ScrollingFrame reserves ScrollBarThickness pixels from its layout width.
+        local ResponsiveCellWidth = -((CellPadding.X * (Columns - 1) + 3) / Columns);
         Library:Create('UIGridLayout', {
             CellPadding = UDim2.fromOffset(CellPadding.X, CellPadding.Y);
             CellSize = UDim2.new(1 / Columns, ResponsiveCellWidth, 0, CellSize.Y);
