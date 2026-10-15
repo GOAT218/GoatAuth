@@ -3581,7 +3581,10 @@ do
             end;
             table.sort(Saved, function(A, B) return tostring(A) < tostring(B); end);
             pcall(function()
-                RecursiveCreatePath(FavoritesFile, true);
+                if isfolder and makefolder then
+                    if not isfolder('Obsidian') then makefolder('Obsidian'); end;
+                    if not isfolder('Obsidian/image_grid_favorites') then makefolder('Obsidian/image_grid_favorites'); end;
+                end;
                 writefile(FavoritesFile, HttpService:JSONEncode(Saved));
             end);
         end;
