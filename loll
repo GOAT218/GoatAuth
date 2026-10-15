@@ -3613,7 +3613,7 @@ do
                 local Player = Players:FindFirstChild(Object);
                 Object = Player and Player.Character;
             end;
-            if typeof(Object) ~= 'Instance' or not (Object:IsA('Model') or Object:IsA('BasePart')) then
+            if typeof(Object) ~= 'Instance' or not (Object:IsA('Model') or Object:IsA('BasePart') or Object:IsA('Tool')) then
                 return nil;
             end;
 
@@ -3632,6 +3632,12 @@ do
                 elseif Descendant:IsA('Humanoid') then
                     Descendant.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None;
                 end;
+            end;
+
+            if Clone:IsA('Tool') then
+                local ToolModel = Instance.new('Model');
+                Clone.Parent = ToolModel;
+                Clone = ToolModel;
             end;
 
             local Viewport = Library:Create('ViewportFrame', {
