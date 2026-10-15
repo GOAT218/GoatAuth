@@ -13,6 +13,7 @@ local Players = cloneref(game:GetService("Players"))
 local RunService = cloneref(game:GetService("RunService"))
 local TweenService = cloneref(game:GetService("TweenService"))
 local Lighting = cloneref(game:GetService("Lighting"))
+local HttpService = cloneref(game:GetService("HttpService"))
 local RenderStepped = RunService.RenderStepped;
 local LocalPlayer = Players.LocalPlayer or Players.PlayerAdded:Wait()
 local Mouse = cloneref(LocalPlayer:GetMouse())
@@ -3532,6 +3533,12 @@ do
         local Groupbox = self;
         local Container = Groupbox.Container;
         Groupbox.Elements = Groupbox.Elements or {};
+        local PersistenceKey = Info.PersistenceKey or Info.FavoriteKey or Idx;
+        local FavoritesFile = nil;
+        if typeof(PersistenceKey) == 'string' and PersistenceKey ~= '' then
+            local SafeKey = PersistenceKey:gsub('[^%w_%-]', '_');
+            FavoritesFile = string.format('Obsidian/image_grid_favorites/%s_%s_%s.json', tostring(game.GameId), tostring(LocalPlayer.UserId), SafeKey);
+        end;
         local Columns = Info.Columns or 5;
         local CellSize = Info.CellSize or Vector2.new(91, 91);
         local CellPadding = Info.CellPadding or Vector2.new(6, 6);
@@ -3555,6 +3562,28 @@ do
                 local Enabled = typeof(Key) == 'number' or Value == true;
                 if Enabled then Grid.Favorites[Id] = true; end;
             end;
+        end;
+
+        if FavoritesFile and isfile and readfile and isfile(FavoritesFile) then
+            pcall(function()
+                local Saved = HttpService:JSONDecode(readfile(FavoritesFile));
+                if typeof(Saved) == 'table' then
+                    for _, Id in ipairs(Saved) do Grid.Favorites[Id] = true; end;
+                end;
+            end);
+        end;
+
+        local function SaveFavorites()
+            if not (FavoritesFile and writefile) then return; end;
+            local Saved = {};
+            for Id, Favorite in pairs(Grid.Favorites) do
+                if Favorite then table.insert(Saved, Id); end;
+            end;
+            table.sort(Saved, function(A, B) return tostring(A) < tostring(B); end);
+            pcall(function()
+                RecursiveCreatePath(FavoritesFile, true);
+                writefile(FavoritesFile, HttpService:JSONEncode(Saved));
+            end);
         end;
 
         local Holder = Library:Create('Frame', {
@@ -3710,6 +3739,7 @@ do
             Favorite = Favorite == true;
             if Favorite then Grid.Favorites[Id] = true else Grid.Favorites[Id] = nil end;
             ApplyFavorite(Id);
+            SaveFavorites();
             if FireCallback then
                 local Cell = Grid.Cells[Id];
                 Library:SafeCallback(Grid.FavoriteCallback, Id, Favorite, Cell and Cell.Item);
@@ -3735,6 +3765,14 @@ do
                 return tostring(A) < tostring(B);
             end);
             return Favorites;
+        end;
+
+        function Grid:SaveFavorites()
+            SaveFavorites();
+        end;
+
+        function Grid:GetFavoritesFile()
+            return FavoritesFile;
         end;
 
         function Grid:Clear()
