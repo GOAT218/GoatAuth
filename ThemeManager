@@ -209,34 +209,31 @@ local ThemeManager = {} do
 		glowCorner.CornerRadius = UDim.new(1, 0)
 		glowCorner.Parent = moonGlow
 
-		local moon = Instance.new('TextLabel')
+		local moon = Instance.new('ImageLabel')
 		moon.Name = 'CrescentMoon'
 		moon.AnchorPoint = Vector2.new(0.5, 0.5)
 		moon.BackgroundTransparency = 1
 		moon.Position = UDim2.new(0.83, 0, 0.18, 0)
-		moon.Size = UDim2.fromOffset(80, 80)
-		moon.Font = Enum.Font.GothamBold
-		moon.Text = '☾'
-		moon.TextColor3 = Color3.fromRGB(225, 210, 255)
-		moon.TextSize = 68
-		moon.TextTransparency = 0.12
-		moon.TextStrokeColor3 = Color3.fromRGB(132, 83, 215)
-		moon.TextStrokeTransparency = 0.45
+		moon.Size = UDim2.fromOffset(92, 92)
+		moon.Image = 'rbxassetid://2606749530'
+		moon.ImageColor3 = Color3.fromRGB(230, 218, 255)
+		moon.ImageTransparency = 0.08
+		moon.ScaleType = Enum.ScaleType.Fit
 		moon.ZIndex = 42
 		moon.Parent = layer
 
 		local petals = {}
-		for index = 1, 18 do
-			local petal = Instance.new('TextLabel')
+		for index = 1, 12 do
+			local petal = Instance.new('ImageLabel')
 			petal.Name = 'SakuraPetal' .. index
 			petal.AnchorPoint = Vector2.new(0.5, 0.5)
 			petal.BackgroundTransparency = 1
-			petal.Size = UDim2.fromOffset(20, 20)
-			petal.Font = Enum.Font.GothamBold
-			petal.Text = index % 3 == 0 and '✦' or '◆'
-			petal.TextColor3 = index % 2 == 0 and Color3.fromRGB(255, 112, 184) or Color3.fromRGB(218, 161, 255)
-			petal.TextSize = 8 + (index % 4) * 2
-			petal.TextTransparency = 0.18 + (index % 3) * 0.12
+			local petalSize = 38 + (index % 4) * 12
+			petal.Size = UDim2.fromOffset(petalSize, petalSize)
+			petal.Image = 'rbxassetid://345151257'
+			petal.ImageColor3 = index % 2 == 0 and Color3.fromRGB(255, 145, 201) or Color3.fromRGB(226, 178, 255)
+			petal.ImageTransparency = 0.12 + (index % 3) * 0.1
+			petal.ScaleType = Enum.ScaleType.Fit
 			petal.ZIndex = 43
 			petal.Parent = layer
 			table.insert(petals, {
@@ -577,3 +574,4 @@ local ThemeManager = {} do
 end
 
 return ThemeManager
+
