@@ -64,7 +64,7 @@ local ThemeManager = {} do
 		['Obsidian'] = { 31, { FontColor = 'ffffff', MainColor = '0a0a0a', AccentColor = '00ff88', BackgroundColor = '050505', OutlineColor = '1a1a1a' } },
 		['UwUWare'] = { 32, { FontColor = 'ffffff', MainColor = '181818', AccentColor = 'f9a9d4', BackgroundColor = '181818', OutlineColor = '181818' } },
 		['Halloween'] = { 33, { FontColor = 'f1ebe1', MainColor = '140f0d', AccentColor = 'ff6900', BackgroundColor = '0e0c0c', OutlineColor = '1f1f1f' } },
-		['Midnight Sakura'] = { 34, { FontColor = 'f7efff', MainColor = '121020', AccentColor = 'ff6fb5', BackgroundColor = '090814', OutlineColor = '29213d' } },
+		['Midnight Sakura'] = { 0, { FontColor = 'f7efff', MainColor = '121020', AccentColor = 'ff6fb5', BackgroundColor = '090814', OutlineColor = '29213d' } },
 	}
 
 	function ApplyBackgroundVideo(videoLink)
@@ -577,4 +577,3 @@ local ThemeManager = {} do
 end
 
 return ThemeManager
-
