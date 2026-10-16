@@ -54,44 +54,17 @@ end
 local ThemeManager = {} do
 	local ThemeFields = { 'FontColor', 'MainColor', 'AccentColor', 'BackgroundColor', 'OutlineColor', 'VideoLink' }
 	ThemeManager.Folder = 'LinoriaLibSettings'
+	ThemeManager.DefaultTheme = 'Halloween'
 
 	ThemeManager.Library = nil
 	ThemeManager.BuiltInThemes = {
-		['Default'] = { 0, { FontColor = 'ebdbb2', MainColor = '282828', AccentColor = 'fe8019', BackgroundColor = '1d2021', OutlineColor = '3c3836' } },
 		['Elite Zone'] = { 1, { FontColor = 'ffffff', MainColor = '181818', AccentColor = '858586', BackgroundColor = '141414', OutlineColor = '1f1f1f' } },
 		['UE'] = { 2, { FontColor = 'ffffff', MainColor = '181818', AccentColor = '4777b6', BackgroundColor = '141414', OutlineColor = '1f1f1f' } },
-		['Better UE'] = { 2.5, { FontColor = 'd6d6d6', MainColor = '181818', AccentColor = '4777b6', BackgroundColor = '141414', OutlineColor = '1f1f1f' } },
 		['BBot'] = { 3, { FontColor = 'ffffff', MainColor = '1e1e1e', AccentColor = '7e48a3', BackgroundColor = '232323', OutlineColor = '141414' } },
-		['Fatality'] = { 4, { FontColor = 'ffffff', MainColor = '1e1842', AccentColor = 'c50754', BackgroundColor = '191335', OutlineColor = '3c355d' } },
-		['Jester'] = { 5, { FontColor = 'ffffff', MainColor = '242424', AccentColor = 'db4467', BackgroundColor = '1c1c1c', OutlineColor = '373737' } },
-		['Mint'] = { 6, { FontColor = 'ffffff', MainColor = '242424', AccentColor = '3db488', BackgroundColor = '1c1c1c', OutlineColor = '373737' } },
-		['Tokyo Night'] = { 7, { FontColor = 'ffffff', MainColor = '191925', AccentColor = '6759b3', BackgroundColor = '16161f', OutlineColor = '323232' } },
-		['Ubuntu'] = { 8, { FontColor = 'ffffff', MainColor = '3e3e3e', AccentColor = 'e2581e', BackgroundColor = '323232', OutlineColor = '191919' } },
-		['Quartz'] = { 9, { FontColor = 'ffffff', MainColor = '232330', AccentColor = '426e87', BackgroundColor = '1d1b26', OutlineColor = '27232f' } },
-		['Crimson'] = { 10, { FontColor = 'ffffff', MainColor = '1f1515', AccentColor = 'cc2222', BackgroundColor = '160e0e', OutlineColor = '3a1f1f' } },
-		['Cyberpunk'] = { 11, { FontColor = 'ffffff', MainColor = '0d0d1a', AccentColor = '00ffe0', BackgroundColor = '080810', OutlineColor = '1a1a33' } },
-		['Caramel'] = { 12, { FontColor = 'ffffff', MainColor = '2b1f10', AccentColor = 'd4822a', BackgroundColor = '1c1208', OutlineColor = '3d2b12' } },
-		['Ocean'] = { 13, { FontColor = 'ffffff', MainColor = '0d1b2a', AccentColor = '1e90ff', BackgroundColor = '080f18', OutlineColor = '1a3a5c' } },
-		['Lavender'] = { 14, { FontColor = 'ffffff', MainColor = '22203a', AccentColor = 'b48ef0', BackgroundColor = '19172d', OutlineColor = '35305a' } },
-		['Matrix'] = { 15, { FontColor = '00ff41', MainColor = '0d1a0d', AccentColor = '00cc33', BackgroundColor = '080f08', OutlineColor = '0f2b0f' } },
-		['Rose Gold'] = { 16, { FontColor = 'ffffff', MainColor = '2a1a1f', AccentColor = 'e8a0b0', BackgroundColor = '1e1015', OutlineColor = '3d2030' } },
-		['Midnight Gold'] = { 17, { FontColor = 'ffffff', MainColor = '12162b', AccentColor = 'c9a84c', BackgroundColor = '0c0f1e', OutlineColor = '1e2440' } },
-		['Rust'] = { 18, { FontColor = 'ffffff', MainColor = '1e1510', AccentColor = 'c0521a', BackgroundColor = '140e08', OutlineColor = '3b2010' } },
-		['Slate'] = { 19, { FontColor = 'ffffff', MainColor = '1e2a2a', AccentColor = '4db8b8', BackgroundColor = '141f1f', OutlineColor = '2a3d3d' } },
-		['Dracula'] = { 20, { FontColor = 'f8f8f2', MainColor = '282a36', AccentColor = 'bd93f9', BackgroundColor = '1e1f29', OutlineColor = '44475a' } },
-		['Synthwave'] = { 21, { FontColor = 'ffffff', MainColor = '1a0a2e', AccentColor = 'ff2d78', BackgroundColor = '110720', OutlineColor = '2d1050' } },
-		['Forest'] = { 22, { FontColor = 'ffffff', MainColor = '1a2215', AccentColor = '5a9e3a', BackgroundColor = '111a0d', OutlineColor = '2a3d1e' } },
-		['Arctic'] = { 23, { FontColor = 'ffffff', MainColor = '1a2535', AccentColor = 'a8d8f0', BackgroundColor = '111c2a', OutlineColor = '253545' } },
-		['Charcoal'] = { 24, { FontColor = 'ffffff', MainColor = '2e2e2e', AccentColor = 'aaaaaa', BackgroundColor = '222222', OutlineColor = '444444' } },
-		['One Dark'] = { 25, { FontColor = 'abb2bf', MainColor = '282c34', AccentColor = '61afef', BackgroundColor = '21252b', OutlineColor = '3e4451' } },
-		['Nord'] = { 26, { FontColor = 'd8dee9', MainColor = '2e3440', AccentColor = '88c0d0', BackgroundColor = '242933', OutlineColor = '3b4252' } },
-		['Ayu Mirage'] = { 27, { FontColor = 'cccac2', MainColor = '1f2430', AccentColor = 'ffcc66', BackgroundColor = '171b24', OutlineColor = '242936' } },
-		['Material Ocean'] = { 28, { FontColor = '8f93a2', MainColor = '0f111a', AccentColor = '80cbc4', BackgroundColor = '090b10', OutlineColor = '1a1c25' } },
-		['Deep Sea'] = { 29, { FontColor = 'ffffff', MainColor = '001220', AccentColor = '0077b6', BackgroundColor = '000b14', OutlineColor = '002a45' } },
-		['Vampire'] = { 30, { FontColor = 'ffffff', MainColor = '1a0000', AccentColor = 'e60000', BackgroundColor = '0d0000', OutlineColor = '330000' } },
 		['Obsidian'] = { 31, { FontColor = 'ffffff', MainColor = '0a0a0a', AccentColor = '00ff88', BackgroundColor = '050505', OutlineColor = '1a1a1a' } },
 		['UwUWare'] = { 32, { FontColor = 'ffffff', MainColor = '181818', AccentColor = 'f9a9d4', BackgroundColor = '181818', OutlineColor = '181818' } },
-		['Halloween'] = { 33, { FontColor = 'f1ebe1', MainColor = '140f0d', AccentColor = 'ff6900', BackgroundColor = '0e0c0c', OutlineColor = '5b3012' } },
+		['Halloween'] = { 33, { FontColor = 'f1ebe1', MainColor = '140f0d', AccentColor = 'ff6900', BackgroundColor = '0e0c0c', OutlineColor = '1f1f1f' } },
+		['Midnight Sakura'] = { 34, { FontColor = 'f7efff', MainColor = '121020', AccentColor = 'ff6fb5', BackgroundColor = '090814', OutlineColor = '29213d' } },
 	}
 
 	function ApplyBackgroundVideo(videoLink)
@@ -202,6 +175,98 @@ local ThemeManager = {} do
 		if self.Library.GiveSignal then self.Library:GiveSignal(connection) end
 	end
 
+	function ThemeManager:SetSakuraDecorations(enabled)
+		enabled = enabled == true
+		if self.SakuraLayer then
+			self.SakuraLayer.Visible = enabled
+			return
+		end
+		if not enabled then return end
+
+		local holder = self.Library and self.Library.Window and self.Library.Window.Holder
+		if not holder then return end
+
+		local layer = Instance.new('Frame')
+		layer.Name = 'MidnightSakuraThemeLayer'
+		layer.BackgroundTransparency = 1
+		layer.Size = UDim2.fromScale(1, 1)
+		layer.ClipsDescendants = true
+		layer.ZIndex = 40
+		layer.Parent = holder
+		self.SakuraLayer = layer
+
+		local moonGlow = Instance.new('Frame')
+		moonGlow.Name = 'MoonGlow'
+		moonGlow.AnchorPoint = Vector2.new(0.5, 0.5)
+		moonGlow.Position = UDim2.new(0.83, 0, 0.18, 0)
+		moonGlow.Size = UDim2.fromOffset(112, 112)
+		moonGlow.BackgroundColor3 = Color3.fromRGB(174, 136, 255)
+		moonGlow.BackgroundTransparency = 0.82
+		moonGlow.BorderSizePixel = 0
+		moonGlow.ZIndex = 40
+		moonGlow.Parent = layer
+		local glowCorner = Instance.new('UICorner')
+		glowCorner.CornerRadius = UDim.new(1, 0)
+		glowCorner.Parent = moonGlow
+
+		local moon = Instance.new('TextLabel')
+		moon.Name = 'CrescentMoon'
+		moon.AnchorPoint = Vector2.new(0.5, 0.5)
+		moon.BackgroundTransparency = 1
+		moon.Position = UDim2.new(0.83, 0, 0.18, 0)
+		moon.Size = UDim2.fromOffset(80, 80)
+		moon.Font = Enum.Font.GothamBold
+		moon.Text = '☾'
+		moon.TextColor3 = Color3.fromRGB(225, 210, 255)
+		moon.TextSize = 68
+		moon.TextTransparency = 0.12
+		moon.TextStrokeColor3 = Color3.fromRGB(132, 83, 215)
+		moon.TextStrokeTransparency = 0.45
+		moon.ZIndex = 42
+		moon.Parent = layer
+
+		local petals = {}
+		for index = 1, 18 do
+			local petal = Instance.new('TextLabel')
+			petal.Name = 'SakuraPetal' .. index
+			petal.AnchorPoint = Vector2.new(0.5, 0.5)
+			petal.BackgroundTransparency = 1
+			petal.Size = UDim2.fromOffset(20, 20)
+			petal.Font = Enum.Font.GothamBold
+			petal.Text = index % 3 == 0 and '✦' or '◆'
+			petal.TextColor3 = index % 2 == 0 and Color3.fromRGB(255, 112, 184) or Color3.fromRGB(218, 161, 255)
+			petal.TextSize = 8 + (index % 4) * 2
+			petal.TextTransparency = 0.18 + (index % 3) * 0.12
+			petal.ZIndex = 43
+			petal.Parent = layer
+			table.insert(petals, {
+				Object = petal,
+				StartX = ((index * 47) % 100) / 100,
+				StartY = ((index * 29) % 100) / 100,
+				Speed = 0.035 + (index % 5) * 0.009,
+				Drift = 12 + (index % 4) * 6,
+				Phase = index * 0.73,
+			})
+		end
+
+		local elapsed = 0
+		local connection = RunService.RenderStepped:Connect(function(delta)
+			if not layer.Parent then return end
+			elapsed += delta
+			local pulse = math.sin(elapsed * 0.9)
+			moon.Rotation = pulse * 2.5
+			moonGlow.Size = UDim2.fromOffset(112 + pulse * 6, 112 + pulse * 6)
+			moonGlow.BackgroundTransparency = 0.80 + math.abs(pulse) * 0.08
+			for _, item in ipairs(petals) do
+				local y = (item.StartY + elapsed * item.Speed) % 1.12 - 0.06
+				local xOffset = math.sin(elapsed * 1.25 + item.Phase) * item.Drift
+				item.Object.Position = UDim2.new(item.StartX, xOffset, y, 0)
+				item.Object.Rotation = (elapsed * 55 + item.Phase * 35) % 360
+			end
+		end)
+		if self.Library.GiveSignal then self.Library:GiveSignal(connection) end
+	end
+
 	function ThemeManager:GetPaths()
 		local paths = {}
 		local parts = self.Folder:split('/')
@@ -240,6 +305,7 @@ local ThemeManager = {} do
 		if not data then return end
 
 		self:SetHalloweenDecorations(theme == 'Halloween')
+		self:SetSakuraDecorations(theme == 'Midnight Sakura')
 
 		if self.Library.InnerVideoBackground ~= nil then
 			self.Library.InnerVideoBackground.Visible = false
@@ -303,7 +369,7 @@ local ThemeManager = {} do
 	end
 
 	function ThemeManager:LoadDefault()
-		local theme = 'Default'
+		local theme = self.BuiltInThemes[self.DefaultTheme] and self.DefaultTheme or 'Halloween'
 		local content = isfile(self.Folder .. '/themes/default.txt') and readfile(self.Folder .. '/themes/default.txt')
 
 		local isDefault = true
@@ -314,8 +380,6 @@ local ThemeManager = {} do
 				theme = content
 				isDefault = false;
 			end
-		elseif self.BuiltInThemes[self.DefaultTheme] then
-			theme = self.DefaultTheme
 		end
 
 		if isDefault then
