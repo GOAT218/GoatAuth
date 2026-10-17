@@ -248,6 +248,9 @@ local Library = {
     Window = { Holder = nil; Tabs = {}; };
 
     VideoLink = "";
+	Language = 'en';
+	TranslationCache = {};
+	LanguageChanged = nil;
 
     Toggled = false;
     ToggleKeybind = nil;
@@ -299,6 +302,136 @@ local Library = {
 
     ImageManager = CustomImageManager;
 };
+
+local SupportedLanguages = {
+	en = true,
+	es = true,
+	['pt-br'] = true,
+}
+
+local function IsTranslatableText(Text)
+	return typeof(Text) == 'string'
+		and #Text > 0
+		and #Text <= 180
+		and Text:find('%a') ~= nil
+		and not Text:match('^https?://')
+		and not Text:match('^#%x+$')
+end
+
+function Library:_LoadTranslationCache(Language)
+	if self.TranslationCache[Language] then return self.TranslationCache[Language] end
+	local Cache = {}
+	local Path = 'LinoriaLibSettings/translations-' .. Language .. '.json'
+	if isfile and readfile and isfile(Path) then
+		pcall(function()
+			local Loaded = HttpService:JSONDecode(readfile(Path))
+			if typeof(Loaded) == 'table' then Cache = Loaded end
+		end)
+	end
+	self.TranslationCache[Language] = Cache
+	return Cache
+end
+
+function Library:_SaveTranslationCache(Language)
+	if not writefile then return end
+	local Cache = self.TranslationCache[Language]
+	if not Cache then return end
+	pcall(function()
+		if makefolder and isfolder and not isfolder('LinoriaLibSettings') then
+			makefolder('LinoriaLibSettings')
+		end
+		writefile('LinoriaLibSettings/translations-' .. Language .. '.json', HttpService:JSONEncode(Cache))
+	end)
+end
+
+function Library:_TranslateText(Text, Language)
+	if Language == 'en' or not IsTranslatableText(Text) then return Text end
+	local Cache = self:_LoadTranslationCache(Language)
+	if Cache[Text] then return Cache[Text] end
+
+	local Target = Language == 'pt-br' and 'pt' or Language
+	local Url = 'https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl='
+		.. Target .. '&dt=t&q=' .. HttpService:UrlEncode(Text)
+	local Success, Result = pcall(function()
+		local Raw = game:HttpGet(Url)
+		local Data = HttpService:JSONDecode(Raw)
+		local Parts = {}
+		for _, Segment in ipairs(Data[1] or {}) do
+			if typeof(Segment) == 'table' and typeof(Segment[1]) == 'string' then
+				table.insert(Parts, Segment[1])
+			end
+		end
+		return table.concat(Parts)
+	end)
+	if Success and typeof(Result) == 'string' and Result ~= '' then
+		Cache[Text] = Result
+		return Result
+	end
+	return Text
+end
+
+function Library:_ApplyLanguageToObject(Object, Generation)
+	if not (Object:IsA('TextLabel') or Object:IsA('TextButton')) then return end
+	local Original = Object:GetAttribute('LinoriaOriginalText')
+	if not Original then
+		Original = Object.Text
+		Object:SetAttribute('LinoriaOriginalText', Original)
+	end
+	if self.Language == 'en' then
+		Object.Text = Original
+		return
+	end
+	if not IsTranslatableText(Original) then return end
+	local Translation = self:_TranslateText(Original, self.Language)
+	if self._LanguageGeneration == Generation and Object.Parent then
+		Object.Text = Translation
+	end
+end
+
+function Library:SetLanguage(Language)
+	Language = tostring(Language or 'en'):lower()
+	if not SupportedLanguages[Language] then Language = 'en' end
+	self.Language = Language
+	self._LanguageGeneration = (self._LanguageGeneration or 0) + 1
+	local Generation = self._LanguageGeneration
+	local Queue = {}
+	for _, Object in ipairs(self.ScreenGui:GetDescendants()) do
+		if Object:IsA('TextLabel') or Object:IsA('TextButton') then
+			table.insert(Queue, Object)
+		end
+	end
+
+	local NextIndex = 0
+	for _ = 1, math.min(4, #Queue) do
+		task.spawn(function()
+			while self._LanguageGeneration == Generation do
+				NextIndex += 1
+				local Object = Queue[NextIndex]
+				if not Object then break end
+				self:_ApplyLanguageToObject(Object, Generation)
+				task.wait(0.03)
+			end
+			if self._LanguageGeneration == Generation then self:_SaveTranslationCache(Language) end
+		end)
+	end
+
+	if not self._LanguageAddedConnection then
+		self._LanguageAddedConnection = self.ScreenGui.DescendantAdded:Connect(function(Object)
+			if self.Language ~= 'en' and (Object:IsA('TextLabel') or Object:IsA('TextButton')) then
+				local CurrentGeneration = self._LanguageGeneration
+				task.defer(function() self:_ApplyLanguageToObject(Object, CurrentGeneration) end)
+			end
+		end)
+		self:GiveSignal(self._LanguageAddedConnection)
+	end
+
+	self:SafeCallback(self.LanguageChanged, Language)
+end
+
+function Library:OnLanguageChanged(Callback)
+	self.LanguageChanged = Callback
+	Callback(self.Language)
+end
 
 if RunService:IsStudio() then
    Library.IsMobile = InputService.TouchEnabled and not InputService.MouseEnabled 
