@@ -5669,8 +5669,7 @@ function Library:CreateWindow(...)
 	Window.SidebarTweenTime = 0.18
 	Window.SidebarExpanded = false
 	local function SyncSidebarPosition()
-		local Inset = ScreenGui.IgnoreGuiInset and Vector2.zero or game:GetService('GuiService'):GetGuiInset()
-		local Position = Inner.AbsolutePosition - Inset
+		local Position = Inner.AbsolutePosition
 		SidebarOuter.Position = UDim2.fromOffset(Position.X + 8 + SidebarCollapsedWidth, Position.Y + 25)
 		SidebarOuter.Visible = Outer.Visible and Window.TabLayout == 'Expandable Sidebar'
 		SidebarOuter.Size = UDim2.fromOffset(SidebarOuter.Size.X.Offset, math.max(0, Inner.AbsoluteSize.Y - 33))
@@ -5762,6 +5761,7 @@ function Library:CreateWindow(...)
 	end)
 
     function Window:AddTab(Name)
+		Window._NavigationTabCount = (Window._NavigationTabCount or 0) + 1
         local Tab = {
             Groupboxes = {};
             Tabboxes = {};
@@ -5770,6 +5770,7 @@ function Library:CreateWindow(...)
 
         local TabButtonWidth = Library:GetTextBounds(Name, Library.Font, Library.FontSize + 2);
         local TabButton = Library:Create('Frame', {
+			LayoutOrder = Window._NavigationTabCount;
             BackgroundColor3 = Library.BackgroundColor;
             BorderColor3 = Library.OutlineColor;
             Size = UDim2.new(0, TabButtonWidth + 8 + 4, 1, 0);
