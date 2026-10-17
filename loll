@@ -307,6 +307,18 @@ local SupportedLanguages = {
 	en = true,
 	es = true,
 	['pt-br'] = true,
+	['zh-cn'] = true,
+	['zh-tw'] = true,
+	fr = true,
+	de = true,
+	ru = true,
+	ja = true,
+	ko = true,
+	ar = true,
+	hi = true,
+	tr = true,
+	id = true,
+	it = true,
 }
 
 local function IsTranslatableText(Text)
@@ -349,7 +361,12 @@ function Library:_TranslateText(Text, Language)
 	local Cache = self:_LoadTranslationCache(Language)
 	if Cache[Text] then return Cache[Text] end
 
-	local Target = Language == 'pt-br' and 'pt' or Language
+	local TranslationTargets = {
+		['pt-br'] = 'pt',
+		['zh-cn'] = 'zh-CN',
+		['zh-tw'] = 'zh-TW',
+	}
+	local Target = TranslationTargets[Language] or Language
 	local Url = 'https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl='
 		.. Target .. '&dt=t&q=' .. HttpService:UrlEncode(Text)
 	local Success, Result = pcall(function()
