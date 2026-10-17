@@ -5670,6 +5670,19 @@ function Library:CreateWindow(...)
 	Window.SidebarTweenTime = 0.18
 	Window.SidebarExpanded = false
 	local SidebarTween
+	local WindowLayoutBase
+	local function SetNavigationWindowExtension(Extension)
+		if not WindowLayoutBase then return end
+		Outer.Size = UDim2.new(WindowLayoutBase.Size.X.Scale, WindowLayoutBase.Size.X.Offset + Extension, WindowLayoutBase.Size.Y.Scale, WindowLayoutBase.Size.Y.Offset)
+		Outer.Position = UDim2.new(WindowLayoutBase.Position.X.Scale, WindowLayoutBase.Position.X.Offset - Extension * (1 - Outer.AnchorPoint.X), WindowLayoutBase.Position.Y.Scale, WindowLayoutBase.Position.Y.Offset)
+		SidebarOuter.Size = UDim2.new(0, SidebarCollapsedWidth + Extension, 1, -33)
+		MainSectionOuter.Position = UDim2.fromOffset(SidebarCollapsedWidth + 12 + Extension, 25)
+		MainSectionOuter.Size = UDim2.new(1, -(SidebarCollapsedWidth + 20 + Extension), 1, -33)
+	end
+	local NavigationExtension = Instance.new('NumberValue')
+	NavigationExtension.Value = 0
+	NavigationExtension.Parent = Outer
+	Library:GiveSignal(NavigationExtension.Changed:Connect(SetNavigationWindowExtension))
 	local function UpdateSidebarLabels(Expanded, Instant)
 		for _, Tab in next, Window.Tabs do
 			if Window.TabLayout == 'Expandable Sidebar' then
@@ -5684,10 +5697,10 @@ function Library:CreateWindow(...)
 		end
 	end
 	local function SyncSidebarPosition()
-		local Position = Inner.AbsolutePosition
-		SidebarOuter.Position = UDim2.fromOffset(Position.X + 8 + SidebarCollapsedWidth, Position.Y + 25)
+		SidebarOuter.Parent = Inner
+		SidebarOuter.AnchorPoint = Vector2.zero
+		SidebarOuter.Position = UDim2.fromOffset(8, 25)
 		SidebarOuter.Visible = Outer.Visible and Window.TabLayout == 'Expandable Sidebar'
-		SidebarOuter.Size = UDim2.fromOffset(SidebarOuter.Size.X.Offset, math.max(0, Inner.AbsoluteSize.Y - 33))
 	end
 	Library:GiveSignal(Inner:GetPropertyChangedSignal('AbsolutePosition'):Connect(SyncSidebarPosition))
 	Library:GiveSignal(Inner:GetPropertyChangedSignal('AbsoluteSize'):Connect(SyncSidebarPosition))
@@ -5696,6 +5709,13 @@ function Library:CreateWindow(...)
 	local function SetSidebarExpanded(Expanded, Instant)
 		if Window.TabLayout ~= 'Expandable Sidebar' then return end
 		Window.SidebarExpanded = Expanded == true
+		local CurrentExtension = NavigationExtension.Value
+		WindowLayoutBase = {
+			Size = UDim2.new(Outer.Size.X.Scale, Outer.Size.X.Offset - CurrentExtension, Outer.Size.Y.Scale, Outer.Size.Y.Offset),
+			Position = UDim2.new(Outer.Position.X.Scale, Outer.Position.X.Offset + CurrentExtension * (1 - Outer.AnchorPoint.X), Outer.Position.Y.Scale, Outer.Position.Y.Offset),
+		}
+		-- The full window grows left while the content retains its screen position.
+		local Extension = Window.SidebarExpanded and (SidebarExpandedWidth - SidebarCollapsedWidth) or 0
 		local Width = Window.SidebarExpanded and SidebarExpandedWidth or SidebarCollapsedWidth
 		local ContentOffset = SidebarCollapsedWidth + 12
 		local SidebarGoal = UDim2.fromOffset(Width, math.max(0, Inner.AbsoluteSize.Y - 33))
@@ -5706,12 +5726,11 @@ function Library:CreateWindow(...)
 		MainSectionOuter.Position = ContentPosition
 		MainSectionOuter.Size = ContentSize
 		if Instant then
-			SidebarOuter.Size = SidebarGoal
-			MainSectionOuter.Position = ContentPosition
-			MainSectionOuter.Size = ContentSize
+			NavigationExtension.Value = Extension
+			SetNavigationWindowExtension(Extension)
 		else
 			local Info = TweenInfo.new(Window.SidebarTweenTime, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
-			SidebarTween = TweenService:Create(SidebarOuter, Info, { Size = SidebarGoal })
+			SidebarTween = TweenService:Create(NavigationExtension, Info, { Value = Extension })
 			SidebarTween:Play()
 		end
 	end
@@ -5720,6 +5739,12 @@ function Library:CreateWindow(...)
 	end
 
 	function Window:SetTabLayout(Layout)
+		if SidebarTween then SidebarTween:Cancel() end
+		if WindowLayoutBase then
+			SetNavigationWindowExtension(0)
+			NavigationExtension.Value = 0
+			WindowLayoutBase = nil
+		end
 		Layout = Layout == 'Expandable Sidebar' and Layout or 'Top Tabs'
 		Window.TabLayout = Layout
 		local SidebarMode = Layout == 'Expandable Sidebar'
