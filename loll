@@ -5711,6 +5711,8 @@ function Library:CreateWindow(...)
 		SidebarOuter.Size = UDim2.new(0, SidebarCollapsedWidth + Extension, 1, -33)
 		MainSectionOuter.Position = UDim2.fromOffset(SidebarCollapsedWidth + 12 + Extension, 25)
 		MainSectionOuter.Size = UDim2.new(1, -(SidebarCollapsedWidth + 20 + Extension), 1, -33)
+		WindowLabel.Position = UDim2.fromOffset(Extension, 0)
+		WindowLabel.Size = UDim2.new(1, -Extension, 0, 25)
 	end
 	local NavigationExtension = Instance.new('NumberValue')
 	NavigationExtension.Value = 0
@@ -5865,6 +5867,8 @@ function Library:CreateWindow(...)
 			SetSidebarExpanded(false, true)
 		else
 			Window.SidebarExpanded = false
+			WindowLabel.Position = UDim2.fromOffset(0, 0)
+			WindowLabel.Size = UDim2.new(1, 0, 0, 25)
 			MainSectionOuter.Position = UDim2.new(0, 8, 0, 58)
 			MainSectionOuter.Size = UDim2.new(1, -16, 1, -66)
 		end
