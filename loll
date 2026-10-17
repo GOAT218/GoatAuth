@@ -1043,6 +1043,7 @@ do
     local Funcs = {};
 
     function Funcs:AddColorPicker(Idx, Info)
+		local ParentObj = self;
         local ToggleLabel = self.TextLabel;
         assert(Info.Default, 'AddColorPicker: Missing default value.');
 		local HasTransparency = Info.Transparency ~= false and Info.NoTransparency ~= true;
@@ -1648,6 +1649,9 @@ do
 
         ColorPicker:Display();
         ColorPicker.DisplayFrame = DisplayFrame
+		if ParentObj.Addons then
+			table.insert(ParentObj.Addons, ColorPicker);
+		end;
 
         Options[Idx] = ColorPicker;
 
@@ -2711,6 +2715,17 @@ do
         end;
         ToggleRegion.InputBegan:Connect(function(Input)
             if (Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch) and not Library:MouseIsOverOpenedFrame() then
+				local Pointer = Input.Position;
+				for _, Addon in next, Toggle.Addons do
+					local AddonFrame = Addon.DisplayFrame;
+					if AddonFrame and AddonFrame.Visible then
+						local Pos, Size = AddonFrame.AbsolutePosition, AddonFrame.AbsoluteSize;
+						if Pointer.X >= Pos.X and Pointer.X <= Pos.X + Size.X
+							and Pointer.Y >= Pos.Y and Pointer.Y <= Pos.Y + Size.Y then
+							return;
+						end;
+					end;
+				end;
                 Toggle:SetValue(not Toggle.Value)
                 Library:AttemptSave();
             end;
