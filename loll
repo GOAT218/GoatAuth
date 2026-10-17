@@ -5373,8 +5373,8 @@ function Library:CreateWindow(...)
         SortOrder = Enum.SortOrder.LayoutOrder;
         Parent = TabArea;
     });
-	local SidebarCollapsedWidth = 46;
-	local SidebarExpandedWidth = 164;
+	local SidebarCollapsedWidth = 54;
+	local SidebarExpandedWidth = 172;
 	local SidebarOuter = Library:Create('Frame', {
 		Name = 'NavigationSidebar';
 		BorderSizePixel = 0;
@@ -5393,15 +5393,40 @@ function Library:CreateWindow(...)
 		BorderColor3 = 'OutlineColor';
 	});
 	Library:Create('UICorner', { CornerRadius = UDim.new(0, 8); Parent = SidebarOuter; });
-	local SidebarArea = Library:Create('Frame', {
+	local SidebarHeader = Library:CreateLabel({
+		Text = '✦';
+		TextSize = 28;
 		BackgroundTransparency = 1;
-		Position = UDim2.fromOffset(4, 6);
-		Size = UDim2.new(1, -8, 1, -12);
+		Position = UDim2.fromOffset(4, 8);
+		Size = UDim2.new(1, -8, 0, 50);
+		TextColor3 = Library.AccentColor;
+		ZIndex = 74;
+		Parent = SidebarOuter;
+	});
+	Library:AddToRegistry(SidebarHeader, { TextColor3 = 'AccentColor' });
+	local SidebarFooter = Library:CreateLabel({
+		Text = LocalPlayer.DisplayName;
+		TextSize = 12;
+		TextTruncate = Enum.TextTruncate.AtEnd;
+		BackgroundTransparency = 1;
+		Position = UDim2.new(0, 6, 1, -46);
+		Size = UDim2.new(1, -12, 0, 38);
+		ZIndex = 74;
+		Parent = SidebarOuter;
+	});
+	local SidebarArea = Library:Create('ScrollingFrame', {
+		BackgroundTransparency = 1;
+		BorderSizePixel = 0;
+		ScrollBarThickness = 0;
+		CanvasSize = UDim2.fromOffset(0, 0);
+		AutomaticCanvasSize = Enum.AutomaticSize.Y;
+		Position = UDim2.fromOffset(0, 72);
+		Size = UDim2.new(1, 0, 1, -126);
 		ZIndex = 71;
 		Parent = SidebarOuter;
 	});
 	local SidebarListLayout = Library:Create('UIListLayout', {
-		Padding = UDim.new(0, 5);
+		Padding = UDim.new(0, 11);
 		FillDirection = Enum.FillDirection.Vertical;
 		HorizontalAlignment = Enum.HorizontalAlignment.Left;
 		SortOrder = Enum.SortOrder.LayoutOrder;
@@ -5666,6 +5691,11 @@ function Library:CreateWindow(...)
 		shop = 'shopping-bag', misc = 'boxes', world = 'globe', ['ui settings'] = 'settings',
 		settings = 'settings', configs = 'save', player = 'user', combat = 'swords', lua = 'code-2',
 	}
+	local NavigationAssets = {
+		main = '10734975692', visual = '10723346959', visuals = '10723346959',
+		world = '10723404337', player = '10747373176', skins = '10734952036',
+		misc = '10709782497', ['ui settings'] = '10734950309', settings = '10734950309',
+	}
 	Window.TabLayout = 'Top Tabs'
 	Window.SidebarTweenTime = 0.18
 	Window.SidebarExpanded = false
@@ -5684,8 +5714,15 @@ function Library:CreateWindow(...)
 	NavigationExtension.Parent = Outer
 	Library:GiveSignal(NavigationExtension.Changed:Connect(SetNavigationWindowExtension))
 	local function UpdateSidebarLabels(Expanded, Instant)
+		SidebarFooter.Visible = Expanded
 		for _, Tab in next, Window.Tabs do
 			if Window.TabLayout == 'Expandable Sidebar' then
+				local IconPosition = UDim2.new(0, Expanded and 7 or 17, 0.5, -10)
+				if Tab.IconTween then Tab.IconTween:Cancel() end
+				if Instant then Tab.Icon.Position = IconPosition else
+					Tab.IconTween = TweenService:Create(Tab.Icon, TweenInfo.new(Window.SidebarTweenTime), { Position = IconPosition })
+					Tab.IconTween:Play()
+				end
 				Tab.Label.Visible = Expanded
 				local Goal = Expanded and 0 or 1
 				if Tab.LabelTween then Tab.LabelTween:Cancel() end
@@ -5754,7 +5791,7 @@ function Library:CreateWindow(...)
 		for _, Tab in next, Window.Tabs do
 			if SidebarMode then
 				Tab.Button.Parent = SidebarArea
-				Tab.Button.Size = UDim2.new(1, 0, 0, 37)
+				Tab.Button.Size = UDim2.new(1, -4, 0, 34)
 				Tab.Button.BorderSizePixel = 0
 				Tab.Button.BackgroundTransparency = Tab.Indicator.Visible and 0.25 or 1
 				Tab.Button.ZIndex = 72
@@ -5763,8 +5800,8 @@ function Library:CreateWindow(...)
 				Tab.FallbackIcon.ZIndex = 74
 				Tab.Indicator.ZIndex = 75
 				Tab.Button.ClipsDescendants = true
-				Tab.Label.Position = UDim2.fromOffset(36, 0)
-				Tab.Label.Size = UDim2.new(0, SidebarExpandedWidth - 48, 1, 0)
+				Tab.Label.Position = UDim2.fromOffset(34, 0)
+				Tab.Label.Size = UDim2.new(1, -36, 1, -1)
 				Tab.Label.TextXAlignment = Enum.TextXAlignment.Left
 				Tab.Icon.Visible = true
 				Tab.FallbackIcon.Visible = Tab.Icon.Image == ''
@@ -5846,11 +5883,11 @@ function Library:CreateWindow(...)
 		local IconData = Library:GetCustomIcon(IconName)
 		local TabIcon = Library:Create('ImageLabel', {
 			BackgroundTransparency = 1;
-			Position = UDim2.fromOffset(9, 8);
-			Size = UDim2.fromOffset(18, 18);
-			Image = IconData and IconData.Url or '';
-			ImageRectOffset = IconData and IconData.ImageRectOffset or Vector2.zero;
-			ImageRectSize = IconData and IconData.ImageRectSize or Vector2.zero;
+			Position = UDim2.new(0, 7, 0.5, -10);
+			Size = UDim2.fromOffset(20, 20);
+			Image = NavigationAssets[string.lower(Name)] and ('rbxassetid://' .. NavigationAssets[string.lower(Name)]) or (IconData and IconData.Url or '');
+			ImageRectOffset = not NavigationAssets[string.lower(Name)] and IconData and IconData.ImageRectOffset or Vector2.zero;
+			ImageRectSize = not NavigationAssets[string.lower(Name)] and IconData and IconData.ImageRectSize or Vector2.zero;
 			ImageColor3 = Library.FontColor;
 			Visible = false;
 			ZIndex = 3;
