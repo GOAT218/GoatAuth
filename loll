@@ -5373,6 +5373,37 @@ function Library:CreateWindow(...)
         SortOrder = Enum.SortOrder.LayoutOrder;
         Parent = TabArea;
     });
+	local SidebarCollapsedWidth = 46;
+	local SidebarExpandedWidth = 142;
+	local SidebarOuter = Library:Create('Frame', {
+		BackgroundColor3 = Library.BackgroundColor;
+		BorderColor3 = Library.OutlineColor;
+		Position = UDim2.new(0, 8, 0, 25);
+		Size = UDim2.new(0, SidebarCollapsedWidth, 1, -33);
+		Visible = false;
+		ClipsDescendants = true;
+		ZIndex = 7;
+		Parent = Inner;
+	});
+	Library:AddToRegistry(SidebarOuter, {
+		BackgroundColor3 = 'BackgroundColor';
+		BorderColor3 = 'OutlineColor';
+	});
+	Library:Create('UICorner', { CornerRadius = UDim.new(0, 8); Parent = SidebarOuter; });
+	local SidebarArea = Library:Create('Frame', {
+		BackgroundTransparency = 1;
+		Position = UDim2.fromOffset(4, 6);
+		Size = UDim2.new(1, -8, 1, -12);
+		ZIndex = 8;
+		Parent = SidebarOuter;
+	});
+	local SidebarListLayout = Library:Create('UIListLayout', {
+		Padding = UDim.new(0, 5);
+		FillDirection = Enum.FillDirection.Vertical;
+		HorizontalAlignment = Enum.HorizontalAlignment.Left;
+		SortOrder = Enum.SortOrder.LayoutOrder;
+		Parent = SidebarArea;
+	});
     local MainSectionOuter = Library:Create('Frame', {
         BackgroundColor3 = Library.BackgroundColor;
         BorderColor3 = Library.OutlineColor;
@@ -5626,6 +5657,86 @@ function Library:CreateWindow(...)
     function Window:SetWindowTitle(Title)
         WindowLabel.Text = Title;
     end;
+
+	local DefaultTabIcons = {
+		main = 'house', tycoon = 'factory', visual = 'eye', visuals = 'eye', skins = 'shirt',
+		shop = 'shopping-bag', misc = 'boxes', world = 'globe-2', ['ui settings'] = 'settings',
+		settings = 'settings', configs = 'save', player = 'user', combat = 'swords', lua = 'code-2',
+	}
+	Window.TabLayout = 'Top Tabs'
+	Window.SidebarTweenTime = 0.18
+	Window.SidebarExpanded = false
+
+	local function SetSidebarExpanded(Expanded, Instant)
+		if Window.TabLayout ~= 'Expandable Sidebar' then return end
+		Window.SidebarExpanded = Expanded == true
+		local Width = Window.SidebarExpanded and SidebarExpandedWidth or SidebarCollapsedWidth
+		local ContentOffset = Width + 12
+		local SidebarGoal = UDim2.new(0, Width, 1, -33)
+		local ContentPosition = UDim2.new(0, ContentOffset, 0, 25)
+		local ContentSize = UDim2.new(1, -(ContentOffset + 8), 1, -33)
+		if Instant then
+			SidebarOuter.Size = SidebarGoal
+			MainSectionOuter.Position = ContentPosition
+			MainSectionOuter.Size = ContentSize
+		else
+			local Info = TweenInfo.new(Window.SidebarTweenTime, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
+			TweenService:Create(SidebarOuter, Info, { Size = SidebarGoal }):Play()
+			TweenService:Create(MainSectionOuter, Info, { Position = ContentPosition, Size = ContentSize }):Play()
+		end
+	end
+
+	function Window:SetTabLayout(Layout)
+		Layout = Layout == 'Expandable Sidebar' and Layout or 'Top Tabs'
+		Window.TabLayout = Layout
+		local SidebarMode = Layout == 'Expandable Sidebar'
+		TabBarOuter.Visible = not SidebarMode
+		SidebarOuter.Visible = SidebarMode
+
+		for _, Tab in next, Window.Tabs do
+			if SidebarMode then
+				Tab.Button.Parent = SidebarArea
+				Tab.Button.Size = UDim2.new(1, 0, 0, 34)
+				Tab.Label.Position = UDim2.fromOffset(36, 0)
+				Tab.Label.Size = UDim2.new(1, -38, 1, 0)
+				Tab.Label.TextXAlignment = Enum.TextXAlignment.Left
+				Tab.Icon.Visible = true
+				Tab.FallbackIcon.Visible = Tab.Icon.Image == ''
+				Tab.Indicator.Position = UDim2.fromOffset(0, 3)
+				Tab.Indicator.Size = UDim2.new(0, 2, 1, -6)
+			else
+				Tab.Button.Parent = TabArea
+				Tab.Button.Size = Tab.TopSize
+				Tab.Label.Position = UDim2.fromOffset(0, 0)
+				Tab.Label.Size = UDim2.new(1, 0, 1, -1)
+				Tab.Label.TextXAlignment = Enum.TextXAlignment.Center
+				Tab.Icon.Visible = false
+				Tab.FallbackIcon.Visible = false
+				Tab.Indicator.Position = UDim2.fromOffset(0, 0)
+				Tab.Indicator.Size = UDim2.new(1, 0, 0, 2)
+			end
+		end
+
+		if SidebarMode then
+			SetSidebarExpanded(false, true)
+		else
+			Window.SidebarExpanded = false
+			MainSectionOuter.Position = UDim2.new(0, 8, 0, 58)
+			MainSectionOuter.Size = UDim2.new(1, -16, 1, -66)
+		end
+	end
+
+	function Window:SetSidebarAnimationSpeed(Seconds)
+		Window.SidebarTweenTime = math.clamp(tonumber(Seconds) or 0.18, 0.05, 0.6)
+	end
+
+	SidebarOuter.MouseEnter:Connect(function()
+		SetSidebarExpanded(true, false)
+	end)
+	SidebarOuter.MouseLeave:Connect(function()
+		SetSidebarExpanded(false, false)
+	end)
+
     function Window:AddTab(Name)
         local Tab = {
             Groupboxes = {};
@@ -5652,6 +5763,31 @@ function Library:CreateWindow(...)
             ZIndex = 1;
             Parent = TabButton;
         });
+		local IconName = DefaultTabIcons[string.lower(Name)] or 'circle'
+		local IconData = Library:GetCustomIcon(IconName)
+		local TabIcon = Library:Create('ImageLabel', {
+			BackgroundTransparency = 1;
+			Position = UDim2.fromOffset(9, 8);
+			Size = UDim2.fromOffset(18, 18);
+			Image = IconData and IconData.Url or '';
+			ImageRectOffset = IconData and IconData.ImageRectOffset or Vector2.zero;
+			ImageRectSize = IconData and IconData.ImageRectSize or Vector2.zero;
+			ImageColor3 = Library.FontColor;
+			Visible = false;
+			ZIndex = 3;
+			Parent = TabButton;
+		});
+		Library:AddToRegistry(TabIcon, { ImageColor3 = 'FontColor' });
+		local FallbackIcon = Library:CreateLabel({
+			BackgroundTransparency = 1;
+			Position = UDim2.fromOffset(9, 6);
+			Size = UDim2.fromOffset(18, 20);
+			Text = string.upper(string.sub(Name, 1, 1));
+			TextSize = Library.FontSize + 2;
+			Visible = false;
+			ZIndex = 3;
+			Parent = TabButton;
+		});
         local TabIndicator = Library:Create('Frame', {
             BackgroundColor3 = Library.AccentColor;
             BorderSizePixel = 0;
@@ -6065,6 +6201,15 @@ function Library:CreateWindow(...)
             Tab:ShowTab();
         end;
         Window.Tabs[Name] = Tab;
+		Tab.Button = TabButton;
+		Tab.Label = TabButtonLabel;
+		Tab.Icon = TabIcon;
+		Tab.FallbackIcon = FallbackIcon;
+		Tab.Indicator = TabIndicator;
+		Tab.TopSize = UDim2.new(0, TabButtonWidth + 8 + 4, 1, 0);
+		if Window.TabLayout == 'Expandable Sidebar' then
+			Window:SetTabLayout('Expandable Sidebar')
+		end
         return Tab;
     end;
 
@@ -6625,4 +6770,3 @@ function Library:Loader(Config)
 end
 
 return Library
-
