@@ -5218,7 +5218,8 @@ function Library:CreateWindow(...)
         Parent = ShadowHolder;
     });
     local function SyncShadow()
-        ShadowHolder.Position = UDim2.new(Outer.Position.X.Scale, Outer.Position.X.Offset + 8, Outer.Position.Y.Scale, Outer.Position.Y.Offset + 8);
+		local Offset = Window.TabLayout == 'Expandable Sidebar' and 0 or 8
+        ShadowHolder.Position = UDim2.new(Outer.Position.X.Scale, Outer.Position.X.Offset + Offset, Outer.Position.Y.Scale, Outer.Position.Y.Offset + Offset);
         ShadowHolder.Size = Outer.Size;
         ShadowHolder.AnchorPoint = Outer.AnchorPoint;
         ShadowHolder.Visible = Outer.Visible;
@@ -5702,6 +5703,7 @@ function Library:CreateWindow(...)
 	Window.SidebarExpanded = false
 	local SidebarTween
 	local WindowLayoutBase
+	local TopLayoutAppearance
 	local function SetNavigationWindowExtension(Extension)
 		if not WindowLayoutBase then return end
 		Outer.Size = UDim2.new(WindowLayoutBase.Size.X.Scale, WindowLayoutBase.Size.X.Offset + Extension, WindowLayoutBase.Size.Y.Scale, WindowLayoutBase.Size.Y.Offset)
@@ -5775,15 +5777,41 @@ function Library:CreateWindow(...)
 	end
 
 	function Window:SetTabLayout(Layout)
+		Layout = Layout == 'Expandable Sidebar' and Layout or 'Top Tabs'
+		local EnteringSidebar = Layout == 'Expandable Sidebar' and Window.TabLayout ~= Layout
+		local LeavingSidebar = Layout == 'Top Tabs' and Window.TabLayout ~= Layout
 		if SidebarTween then SidebarTween:Cancel() end
 		if WindowLayoutBase then
 			SetNavigationWindowExtension(0)
 			NavigationExtension.Value = 0
 			WindowLayoutBase = nil
 		end
-		Layout = Layout == 'Expandable Sidebar' and Layout or 'Top Tabs'
 		Window.TabLayout = Layout
 		local SidebarMode = Layout == 'Expandable Sidebar'
+		if EnteringSidebar then
+			TopLayoutAppearance = { Size = Outer.Size, Shadows = {} }
+			for _, Image in ipairs({ ShadowImage, ShadowImageOuter, ShadowImageFar }) do
+				table.insert(TopLayoutAppearance.Shadows, { Image = Image, Size = Image.Size, Color = Image.ImageColor3, Transparency = Image.ImageTransparency })
+			end
+			local Viewport = workspace.CurrentCamera.ViewportSize
+			Outer.Size = UDim2.fromOffset(math.min(620, Viewport.X - 24), math.min(600, Viewport.Y - 60))
+			for Index, Image in ipairs({ ShadowImage, ShadowImageOuter, ShadowImageFar }) do
+				Image.Size = UDim2.new(1, 24 + Index * 16, 1, 24 + Index * 16)
+				Image.ImageColor3 = Library.AccentColor
+				Image.ImageTransparency = ({ 0.22, 0.58, 0.86 })[Index]
+				Library:AddToRegistry(Image, { ImageColor3 = 'AccentColor' })
+			end
+		elseif LeavingSidebar and TopLayoutAppearance then
+			Outer.Size = TopLayoutAppearance.Size
+			for _, Saved in ipairs(TopLayoutAppearance.Shadows) do
+				Library:RemoveFromRegistry(Saved.Image)
+				Saved.Image.Size = Saved.Size
+				Saved.Image.ImageColor3 = Saved.Color
+				Saved.Image.ImageTransparency = Saved.Transparency
+			end
+			TopLayoutAppearance = nil
+		end
+		SyncShadow()
 		TabBarOuter.Visible = not SidebarMode
 		SidebarOuter.Visible = SidebarMode
 
