@@ -472,7 +472,6 @@ local SaveManager = {} do
 		SaveManager.AutoloadLabel = section:AddLabel('Current autoload config: ' .. self:GetAutoloadConfig(), true);
 
 		-- Build Cloud Upload section directly below Configuration on the right side
-		self:BuildUploadSection(tab);
 
 		SaveManager:SetIgnoreIndexes({ 'SaveManager_ConfigList', 'SaveManager_ConfigName' });
 	end;
