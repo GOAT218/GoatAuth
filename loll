@@ -5376,14 +5376,16 @@ function Library:CreateWindow(...)
 	local SidebarCollapsedWidth = 46;
 	local SidebarExpandedWidth = 142;
 	local SidebarOuter = Library:Create('Frame', {
+		Name = 'NavigationSidebar';
+		AnchorPoint = Vector2.new(1, 0);
 		BackgroundColor3 = Library.BackgroundColor;
 		BorderColor3 = Library.OutlineColor;
 		Position = UDim2.new(0, 8, 0, 25);
 		Size = UDim2.new(0, SidebarCollapsedWidth, 1, -33);
 		Visible = false;
 		ClipsDescendants = true;
-		ZIndex = 7;
-		Parent = Inner;
+		ZIndex = 70;
+		Parent = ScreenGui;
 	});
 	Library:AddToRegistry(SidebarOuter, {
 		BackgroundColor3 = 'BackgroundColor';
@@ -5394,7 +5396,7 @@ function Library:CreateWindow(...)
 		BackgroundTransparency = 1;
 		Position = UDim2.fromOffset(4, 6);
 		Size = UDim2.new(1, -8, 1, -12);
-		ZIndex = 8;
+		ZIndex = 71;
 		Parent = SidebarOuter;
 	});
 	local SidebarListLayout = Library:Create('UIListLayout', {
@@ -5666,13 +5668,23 @@ function Library:CreateWindow(...)
 	Window.TabLayout = 'Top Tabs'
 	Window.SidebarTweenTime = 0.18
 	Window.SidebarExpanded = false
+	local function SyncSidebarPosition()
+		local Inset = ScreenGui.IgnoreGuiInset and Vector2.zero or game:GetService('GuiService'):GetGuiInset()
+		local Position = Inner.AbsolutePosition - Inset
+		SidebarOuter.Position = UDim2.fromOffset(Position.X + 8 + SidebarCollapsedWidth, Position.Y + 25)
+		SidebarOuter.Visible = Outer.Visible and Window.TabLayout == 'Expandable Sidebar'
+		SidebarOuter.Size = UDim2.fromOffset(SidebarOuter.Size.X.Offset, math.max(0, Inner.AbsoluteSize.Y - 33))
+	end
+	Library:GiveSignal(Inner:GetPropertyChangedSignal('AbsolutePosition'):Connect(SyncSidebarPosition))
+	Library:GiveSignal(Inner:GetPropertyChangedSignal('AbsoluteSize'):Connect(SyncSidebarPosition))
+	Library:GiveSignal(Outer:GetPropertyChangedSignal('Visible'):Connect(SyncSidebarPosition))
 
 	local function SetSidebarExpanded(Expanded, Instant)
 		if Window.TabLayout ~= 'Expandable Sidebar' then return end
 		Window.SidebarExpanded = Expanded == true
 		local Width = Window.SidebarExpanded and SidebarExpandedWidth or SidebarCollapsedWidth
-		local ContentOffset = Width + 12
-		local SidebarGoal = UDim2.new(0, Width, 1, -33)
+		local ContentOffset = SidebarCollapsedWidth + 12
+		local SidebarGoal = UDim2.fromOffset(Width, math.max(0, Inner.AbsoluteSize.Y - 33))
 		local ContentPosition = UDim2.new(0, ContentOffset, 0, 25)
 		local ContentSize = UDim2.new(1, -(ContentOffset + 8), 1, -33)
 		if Instant then
@@ -5697,6 +5709,12 @@ function Library:CreateWindow(...)
 			if SidebarMode then
 				Tab.Button.Parent = SidebarArea
 				Tab.Button.Size = UDim2.new(1, 0, 0, 34)
+				Tab.Button.ZIndex = 72
+				Tab.Label.ZIndex = 74
+				Tab.Icon.ZIndex = 74
+				Tab.FallbackIcon.ZIndex = 74
+				Tab.Indicator.ZIndex = 75
+				Tab.Button.ClipsDescendants = true
 				Tab.Label.Position = UDim2.fromOffset(36, 0)
 				Tab.Label.Size = UDim2.new(1, -38, 1, 0)
 				Tab.Label.TextXAlignment = Enum.TextXAlignment.Left
@@ -5707,6 +5725,11 @@ function Library:CreateWindow(...)
 			else
 				Tab.Button.Parent = TabArea
 				Tab.Button.Size = Tab.TopSize
+				Tab.Button.ZIndex = 1
+				Tab.Label.ZIndex = 1
+				Tab.Icon.ZIndex = 3
+				Tab.FallbackIcon.ZIndex = 3
+				Tab.Indicator.ZIndex = 4
 				Tab.Label.Position = UDim2.fromOffset(0, 0)
 				Tab.Label.Size = UDim2.new(1, 0, 1, -1)
 				Tab.Label.TextXAlignment = Enum.TextXAlignment.Center
@@ -5724,6 +5747,7 @@ function Library:CreateWindow(...)
 			MainSectionOuter.Position = UDim2.new(0, 8, 0, 58)
 			MainSectionOuter.Size = UDim2.new(1, -16, 1, -66)
 		end
+		SyncSidebarPosition()
 	end
 
 	function Window:SetSidebarAnimationSpeed(Seconds)
@@ -6770,3 +6794,4 @@ function Library:Loader(Config)
 end
 
 return Library
+
