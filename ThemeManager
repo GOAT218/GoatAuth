@@ -565,7 +565,7 @@ local ThemeManager = {} do
 		self.InterfaceSettingsTabs[tab] = true
 		local Library = self.Library
 		local Window = Library.Window
-		local LanguageGroup = tab:AddLeftGroupbox('Language')
+		local LanguageGroup = tab:AddRightGroupbox('Language')
 		local LANGUAGE_FILE = self.Folder .. '/ui-language.txt'
 		local LANGUAGE_CHOICES = {
 			'🇺🇸 English',
@@ -617,7 +617,7 @@ local ThemeManager = {} do
 		})
 		LanguageGroup:AddLabel('Translations are downloaded automatically and cached locally.', true)
 		
-		local NavigationGroup = tab:AddLeftGroupbox('Navigation Layout')
+		local NavigationGroup = tab:AddRightGroupbox('Navigation Layout')
 		NavigationGroup:AddDropdown('NavigationLayout', {
 			Text = 'Tab position',
 			Values = { 'Top Tabs', 'Expandable Sidebar' },
