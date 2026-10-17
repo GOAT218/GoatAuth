@@ -5671,18 +5671,12 @@ function Library:CreateWindow(...)
 		if Window.TabLayout ~= 'Expandable Sidebar' then return end
 		Window.SidebarExpanded = Expanded == true
 		local Width = Window.SidebarExpanded and SidebarExpandedWidth or SidebarCollapsedWidth
-		local ContentOffset = Width + 12
 		local SidebarGoal = UDim2.new(0, Width, 1, -33)
-		local ContentPosition = UDim2.new(0, ContentOffset, 0, 25)
-		local ContentSize = UDim2.new(1, -(ContentOffset + 8), 1, -33)
 		if Instant then
 			SidebarOuter.Size = SidebarGoal
-			MainSectionOuter.Position = ContentPosition
-			MainSectionOuter.Size = ContentSize
 		else
 			local Info = TweenInfo.new(Window.SidebarTweenTime, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
 			TweenService:Create(SidebarOuter, Info, { Size = SidebarGoal }):Play()
-			TweenService:Create(MainSectionOuter, Info, { Position = ContentPosition, Size = ContentSize }):Play()
 		end
 	end
 
@@ -5697,23 +5691,33 @@ function Library:CreateWindow(...)
 			if SidebarMode then
 				Tab.Button.Parent = SidebarArea
 				Tab.Button.Size = UDim2.new(1, 0, 0, 34)
+				Tab.Button.ZIndex = 9
 				Tab.Label.Position = UDim2.fromOffset(36, 0)
 				Tab.Label.Size = UDim2.new(1, -38, 1, 0)
 				Tab.Label.TextXAlignment = Enum.TextXAlignment.Left
+				Tab.Label.ZIndex = 10
 				Tab.Icon.Visible = true
 				Tab.FallbackIcon.Visible = Tab.Icon.Image == ''
+				Tab.Icon.ZIndex = 10
+				Tab.FallbackIcon.ZIndex = 10
 				Tab.Indicator.Position = UDim2.fromOffset(0, 3)
 				Tab.Indicator.Size = UDim2.new(0, 2, 1, -6)
+				Tab.Indicator.ZIndex = 11
 			else
 				Tab.Button.Parent = TabArea
 				Tab.Button.Size = Tab.TopSize
+				Tab.Button.ZIndex = 1
 				Tab.Label.Position = UDim2.fromOffset(0, 0)
 				Tab.Label.Size = UDim2.new(1, 0, 1, -1)
 				Tab.Label.TextXAlignment = Enum.TextXAlignment.Center
+				Tab.Label.ZIndex = 1
 				Tab.Icon.Visible = false
 				Tab.FallbackIcon.Visible = false
+				Tab.Icon.ZIndex = 3
+				Tab.FallbackIcon.ZIndex = 3
 				Tab.Indicator.Position = UDim2.fromOffset(0, 0)
 				Tab.Indicator.Size = UDim2.new(1, 0, 0, 2)
+				Tab.Indicator.ZIndex = 4
 			end
 		end
 
