@@ -131,7 +131,7 @@ local ThemeManager = {} do
 		web.ImageTransparency = 0.15
 		web.Position = UDim2.fromOffset(0, 0)
 		web.Size = UDim2.fromOffset(400, 400)
-		web.ZIndex = 41
+		web.ZIndex = 20000
 		web.Parent = layer
 
 		local decorations = {}
