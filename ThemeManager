@@ -559,10 +559,93 @@ local ThemeManager = {} do
 		return tab:AddLeftGroupbox('Themes')
 	end
 
+	function ThemeManager:CreateInterfaceSettings(tab)
+		self.InterfaceSettingsTabs = self.InterfaceSettingsTabs or {}
+		if self.InterfaceSettingsTabs[tab] then return end
+		self.InterfaceSettingsTabs[tab] = true
+		local Library = self.Library
+		local Window = Library.Window
+		local LanguageGroup = tab:AddLeftGroupbox('Language')
+		local LANGUAGE_FILE = self.Folder .. '/ui-language.txt'
+		local LANGUAGE_CHOICES = {
+			'🇺🇸 English',
+			'🇪🇸 Español',
+			'🇧🇷 Português (Brasil)',
+			'🇨🇳 简体中文',
+			'🇹🇼 繁體中文',
+			'🇫🇷 Français',
+			'🇩🇪 Deutsch',
+			'🇷🇺 Русский',
+			'🇯🇵 日本語',
+			'🇰🇷 한국어',
+			'🇸🇦 العربية',
+			'🇮🇳 हिन्दी',
+			'🇹🇷 Türkçe',
+			'🇮🇩 Bahasa Indonesia',
+			'🇮🇹 Italiano',
+		}
+		local LANGUAGE_CODES = {
+			['🇺🇸 English'] = 'en',
+			['🇪🇸 Español'] = 'es',
+			['🇧🇷 Português (Brasil)'] = 'pt-br',
+			['🇨🇳 简体中文'] = 'zh-cn',
+			['🇹🇼 繁體中文'] = 'zh-tw',
+			['🇫🇷 Français'] = 'fr',
+			['🇩🇪 Deutsch'] = 'de',
+			['🇷🇺 Русский'] = 'ru',
+			['🇯🇵 日本語'] = 'ja',
+			['🇰🇷 한국어'] = 'ko',
+			['🇸🇦 العربية'] = 'ar',
+			['🇮🇳 हिन्दी'] = 'hi',
+			['🇹🇷 Türkçe'] = 'tr',
+			['🇮🇩 Bahasa Indonesia'] = 'id',
+			['🇮🇹 Italiano'] = 'it',
+		}
+		local savedLanguage = LANGUAGE_CHOICES[1]
+		if isfile and readfile and isfile(LANGUAGE_FILE) then
+			local loadedLanguage = readfile(LANGUAGE_FILE)
+			if LANGUAGE_CODES[loadedLanguage] then savedLanguage = loadedLanguage end
+		end
+		LanguageGroup:AddDropdown('UILanguage', {
+			Text = 'Interface language',
+			Values = LANGUAGE_CHOICES,
+			Default = table.find(LANGUAGE_CHOICES, savedLanguage) or 1,
+			Callback = function(value)
+				Library:SetLanguage(LANGUAGE_CODES[value] or 'en')
+				if writefile then pcall(writefile, LANGUAGE_FILE, value) end
+			end,
+		})
+		LanguageGroup:AddLabel('Translations are downloaded automatically and cached locally.', true)
+		
+		local NavigationGroup = tab:AddLeftGroupbox('Navigation Layout')
+		NavigationGroup:AddDropdown('NavigationLayout', {
+			Text = 'Tab position',
+			Values = { 'Top Tabs', 'Expandable Sidebar' },
+			Default = 'Top Tabs',
+			Callback = function(value)
+				Window:SetTabLayout(value)
+			end,
+		})
+		NavigationGroup:AddSlider('SidebarAnimationSpeed', {
+			Text = 'Sidebar animation speed',
+			Default = 18,
+			Min = 5,
+			Max = 60,
+			Rounding = 0,
+			Suffix = ' ms x10',
+			Callback = function(value)
+				Window:SetSidebarAnimationSpeed(value / 100)
+			end,
+		})
+		NavigationGroup:AddLabel('The sidebar expands when your pointer moves over it.', true)
+		
+		
+	end
 	function ThemeManager:ApplyToTab(tab)
 		assert(self.Library, 'ThemeManager:ApplyToTab -> Must set ThemeManager.Library first!')
 		local groupbox = self:CreateGroupBox(tab)
 		self:CreateThemeManager(groupbox)
+		self:CreateInterfaceSettings(tab)
 	end
 
 	function ThemeManager:ApplyToGroupbox(groupbox)
