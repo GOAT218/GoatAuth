@@ -5378,6 +5378,7 @@ function Library:CreateWindow(...)
 	local SidebarOuter = Library:Create('Frame', {
 		Name = 'NavigationSidebar';
 		BorderSizePixel = 0;
+		BackgroundTransparency = 1;
 		AnchorPoint = Vector2.new(1, 0);
 		BackgroundColor3 = Library.BackgroundColor;
 		BorderColor3 = Library.OutlineColor;
@@ -5760,8 +5761,6 @@ function Library:CreateWindow(...)
 		local ContentSize = UDim2.new(1, -(ContentOffset + 8), 1, -33)
 		if SidebarTween then SidebarTween:Cancel() end
 		UpdateSidebarLabels(Window.SidebarExpanded, Instant)
-		MainSectionOuter.Position = ContentPosition
-		MainSectionOuter.Size = ContentSize
 		if Instant then
 			NavigationExtension.Value = Extension
 			SetNavigationWindowExtension(Extension)
@@ -5803,6 +5802,8 @@ function Library:CreateWindow(...)
 				Tab.Label.Position = UDim2.fromOffset(34, 0)
 				Tab.Label.Size = UDim2.new(1, -36, 1, -1)
 				Tab.Label.TextXAlignment = Enum.TextXAlignment.Left
+				Tab.Label.Font = Enum.Font.GothamMedium
+				Tab.Label.TextSize = 15
 				Tab.Icon.Visible = true
 				Tab.FallbackIcon.Visible = Tab.Icon.Image == ''
 				Tab.Indicator.Position = UDim2.fromOffset(0, 3)
@@ -5823,6 +5824,8 @@ function Library:CreateWindow(...)
 				Tab.Label.Position = UDim2.fromOffset(0, 0)
 				Tab.Label.Size = UDim2.new(1, 0, 1, -1)
 				Tab.Label.TextXAlignment = Enum.TextXAlignment.Center
+				Tab.Label.Font = Library.Font
+				Tab.Label.TextSize = Library.FontSize
 				Tab.Icon.Visible = false
 				Tab.FallbackIcon.Visible = false
 				Tab.Indicator.Position = UDim2.fromOffset(0, 0)
