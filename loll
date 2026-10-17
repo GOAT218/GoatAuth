@@ -5374,9 +5374,10 @@ function Library:CreateWindow(...)
         Parent = TabArea;
     });
 	local SidebarCollapsedWidth = 46;
-	local SidebarExpandedWidth = 142;
+	local SidebarExpandedWidth = 164;
 	local SidebarOuter = Library:Create('Frame', {
 		Name = 'NavigationSidebar';
+		BorderSizePixel = 0;
 		AnchorPoint = Vector2.new(1, 0);
 		BackgroundColor3 = Library.BackgroundColor;
 		BorderColor3 = Library.OutlineColor;
@@ -5662,12 +5663,26 @@ function Library:CreateWindow(...)
 
 	local DefaultTabIcons = {
 		main = 'house', tycoon = 'factory', visual = 'eye', visuals = 'eye', skins = 'shirt',
-		shop = 'shopping-bag', misc = 'boxes', world = 'globe-2', ['ui settings'] = 'settings',
+		shop = 'shopping-bag', misc = 'boxes', world = 'globe', ['ui settings'] = 'settings',
 		settings = 'settings', configs = 'save', player = 'user', combat = 'swords', lua = 'code-2',
 	}
 	Window.TabLayout = 'Top Tabs'
 	Window.SidebarTweenTime = 0.18
 	Window.SidebarExpanded = false
+	local SidebarTween
+	local function UpdateSidebarLabels(Expanded, Instant)
+		for _, Tab in next, Window.Tabs do
+			if Window.TabLayout == 'Expandable Sidebar' then
+				Tab.Label.Visible = Expanded
+				local Goal = Expanded and 0 or 1
+				if Tab.LabelTween then Tab.LabelTween:Cancel() end
+				if Instant then Tab.Label.TextTransparency = Goal else
+					Tab.LabelTween = TweenService:Create(Tab.Label, TweenInfo.new(Window.SidebarTweenTime), { TextTransparency = Goal })
+					Tab.LabelTween:Play()
+				end
+			end
+		end
+	end
 	local function SyncSidebarPosition()
 		local Position = Inner.AbsolutePosition
 		SidebarOuter.Position = UDim2.fromOffset(Position.X + 8 + SidebarCollapsedWidth, Position.Y + 25)
@@ -5686,15 +5701,22 @@ function Library:CreateWindow(...)
 		local SidebarGoal = UDim2.fromOffset(Width, math.max(0, Inner.AbsoluteSize.Y - 33))
 		local ContentPosition = UDim2.new(0, ContentOffset, 0, 25)
 		local ContentSize = UDim2.new(1, -(ContentOffset + 8), 1, -33)
+		if SidebarTween then SidebarTween:Cancel() end
+		UpdateSidebarLabels(Window.SidebarExpanded, Instant)
+		MainSectionOuter.Position = ContentPosition
+		MainSectionOuter.Size = ContentSize
 		if Instant then
 			SidebarOuter.Size = SidebarGoal
 			MainSectionOuter.Position = ContentPosition
 			MainSectionOuter.Size = ContentSize
 		else
 			local Info = TweenInfo.new(Window.SidebarTweenTime, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
-			TweenService:Create(SidebarOuter, Info, { Size = SidebarGoal }):Play()
-			TweenService:Create(MainSectionOuter, Info, { Position = ContentPosition, Size = ContentSize }):Play()
+			SidebarTween = TweenService:Create(SidebarOuter, Info, { Size = SidebarGoal })
+			SidebarTween:Play()
 		end
+	end
+	function Window:SetSidebarExpanded(Expanded, Instant)
+		SetSidebarExpanded(Expanded, Instant)
 	end
 
 	function Window:SetTabLayout(Layout)
@@ -5707,7 +5729,9 @@ function Library:CreateWindow(...)
 		for _, Tab in next, Window.Tabs do
 			if SidebarMode then
 				Tab.Button.Parent = SidebarArea
-				Tab.Button.Size = UDim2.new(1, 0, 0, 34)
+				Tab.Button.Size = UDim2.new(1, 0, 0, 37)
+				Tab.Button.BorderSizePixel = 0
+				Tab.Button.BackgroundTransparency = Tab.Indicator.Visible and 0.25 or 1
 				Tab.Button.ZIndex = 72
 				Tab.Label.ZIndex = 74
 				Tab.Icon.ZIndex = 74
@@ -5715,7 +5739,7 @@ function Library:CreateWindow(...)
 				Tab.Indicator.ZIndex = 75
 				Tab.Button.ClipsDescendants = true
 				Tab.Label.Position = UDim2.fromOffset(36, 0)
-				Tab.Label.Size = UDim2.new(1, -38, 1, 0)
+				Tab.Label.Size = UDim2.new(0, SidebarExpandedWidth - 48, 1, 0)
 				Tab.Label.TextXAlignment = Enum.TextXAlignment.Left
 				Tab.Icon.Visible = true
 				Tab.FallbackIcon.Visible = Tab.Icon.Image == ''
@@ -5724,6 +5748,11 @@ function Library:CreateWindow(...)
 			else
 				Tab.Button.Parent = TabArea
 				Tab.Button.Size = Tab.TopSize
+				Tab.Button.BorderSizePixel = 1
+				Tab.Button.BackgroundTransparency = 0
+				if Tab.LabelTween then Tab.LabelTween:Cancel() end
+				Tab.Label.TextTransparency = 0
+				Tab.Label.Visible = true
 				Tab.Button.ZIndex = 1
 				Tab.Label.ZIndex = 1
 				Tab.Icon.ZIndex = 3
@@ -5894,6 +5923,7 @@ function Library:CreateWindow(...)
             Library.RegistryMap[TabButton].Properties.BackgroundColor3 = 'MainColor';
             TabFrame.Visible = true;
             TabIndicator.Visible = true;
+			TabButton.BackgroundTransparency = Window.TabLayout == 'Expandable Sidebar' and 0.25 or 0
         end;
         function Tab:HideTab()
             Blocker.BackgroundTransparency = 1;
@@ -5901,6 +5931,7 @@ function Library:CreateWindow(...)
             Library.RegistryMap[TabButton].Properties.BackgroundColor3 = 'BackgroundColor';
             TabFrame.Visible = false;
             TabIndicator.Visible = false;
+			TabButton.BackgroundTransparency = Window.TabLayout == 'Expandable Sidebar' and 1 or 0
         end;
         function Tab:SetLayoutOrder(Position)
             TabButton.LayoutOrder = Position;
