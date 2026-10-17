@@ -324,7 +324,7 @@ local SupportedLanguages = {
 local function IsTranslatableText(Text)
 	return typeof(Text) == 'string'
 		and #Text > 0
-		and #Text <= 180
+		and #Text <= 450
 		and Text:find('%a') ~= nil
 		and not Text:match('^https?://')
 		and not Text:match('^#%x+$')
@@ -370,7 +370,15 @@ function Library:_TranslateText(Text, Language)
 	local Url = 'https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl='
 		.. Target .. '&dt=t&q=' .. HttpService:UrlEncode(Text)
 	local Success, Result = pcall(function()
-		local Raw = game:HttpGet(Url)
+		if self._GoogleRateLimited then error('Primary translation service unavailable') end
+		local Request = request or http_request or (syn and syn.request)
+		local Raw
+		if Request then
+			local Response = Request({ Url = Url, Method = 'GET' })
+			if Response.StatusCode == 429 then self._GoogleRateLimited = true end
+			assert(Response.StatusCode == 200, 'Translation request failed')
+			Raw = Response.Body
+		else Raw = game:HttpGet(Url) end
 		local Data = HttpService:JSONDecode(Raw)
 		local Parts = {}
 		for _, Segment in ipairs(Data[1] or {}) do
@@ -380,6 +388,22 @@ function Library:_TranslateText(Text, Language)
 		end
 		return table.concat(Parts)
 	end)
+	if not Success or Result == '' then
+		Success, Result = pcall(function()
+			local FallbackUrl = 'https://api.mymemory.translated.net/get?q=' .. HttpService:UrlEncode(Text)
+				.. '&langpair=' .. HttpService:UrlEncode('en|' .. Target)
+			local Request = request or http_request or (syn and syn.request)
+			local Raw
+			if Request then
+				local Response = Request({ Url = FallbackUrl, Method = 'GET' })
+				assert(Response.StatusCode == 200, 'Fallback translation request failed')
+				Raw = Response.Body
+			else Raw = game:HttpGet(FallbackUrl) end
+			local Data = HttpService:JSONDecode(Raw)
+			assert(tonumber(Data.responseStatus) == 200 and not Data.quotaFinished, 'Translation quota exhausted')
+			return Data.responseData.translatedText
+		end)
+	end
 	if Success and typeof(Result) == 'string' and Result ~= '' then
 		Cache[Text] = Result
 		return Result
@@ -418,19 +442,54 @@ function Library:SetLanguage(Language)
 		end
 	end
 
-	local NextIndex = 0
-	for _ = 1, math.min(4, #Queue) do
-		task.spawn(function()
-			while self._LanguageGeneration == Generation do
-				NextIndex += 1
-				local Object = Queue[NextIndex]
-				if not Object then break end
-				self:_ApplyLanguageToObject(Object, Generation)
-				task.wait(0.03)
+	task.spawn(function()
+		local Cache = self:_LoadTranslationCache(Language)
+		local Pending, Seen = {}, {}
+		for _, Object in ipairs(Queue) do
+			local Original = Object:GetAttribute('LinoriaOriginalText') or Object.Text
+			Object:SetAttribute('LinoriaOriginalText', Original)
+			if Language ~= 'en' and IsTranslatableText(Original) and not Cache[Original] and not Seen[Original] then
+				Seen[Original] = true
+				table.insert(Pending, Original)
 			end
-			if self._LanguageGeneration == Generation then self:_SaveTranslationCache(Language) end
-		end)
-	end
+		end
+		local Index, Failed = 1, false
+		while Index <= #Pending and self._LanguageGeneration == Generation do
+			local Batch, Length = {}, 0
+			while Index <= #Pending and Length + #Pending[Index] + 1 <= 450 do
+				table.insert(Batch, Pending[Index])
+				Length += #Pending[Index] + 1
+				Index += 1
+			end
+			if #Batch == 0 then Index += 1 else
+				local Lines = {}
+				for _, Text in ipairs(Batch) do table.insert(Lines, (Text:gsub('[\r\n]+', ' '))) end
+				local Joined = table.concat(Lines, '\n')
+				local Translated = self:_TranslateText(Joined, Language)
+				local Parts = string.split(Translated, '\n')
+				if Cache[Joined] and #Parts == #Batch then
+					for I, Text in ipairs(Batch) do Cache[Text] = Parts[I] end
+				else Failed = true end
+			end
+			for _, Object in ipairs(Queue) do
+				if self._LanguageGeneration ~= Generation then return end
+				if Object.Parent then
+					local Original = Object:GetAttribute('LinoriaOriginalText')
+					Object.Text = Language == 'en' and Original or (Cache[Original] or Original)
+				end
+			end
+			task.wait(0.2)
+		end
+		if self._LanguageGeneration ~= Generation then return end
+		for _, Object in ipairs(Queue) do
+			if Object.Parent then
+				local Original = Object:GetAttribute('LinoriaOriginalText')
+				Object.Text = Language == 'en' and Original or (Cache[Original] or Original)
+			end
+		end
+		self:_SaveTranslationCache(Language)
+		if Failed then self:Notify('Some translations could not be loaded. Please try again later.', 5) end
+	end)
 
 	if not self._LanguageAddedConnection then
 		self._LanguageAddedConnection = self.ScreenGui.DescendantAdded:Connect(function(Object)
