@@ -5378,11 +5378,11 @@ function Library:CreateWindow(...)
 	local SidebarOuter = Library:Create('Frame', {
 		BackgroundColor3 = Library.BackgroundColor;
 		BorderColor3 = Library.OutlineColor;
-		Position = UDim2.new(0, 8 + SidebarExpandedWidth - SidebarCollapsedWidth, 0, 25);
+		Position = UDim2.new(0, 8, 0, 25);
 		Size = UDim2.new(0, SidebarCollapsedWidth, 1, -33);
 		Visible = false;
 		ClipsDescendants = true;
-		ZIndex = 20;
+		ZIndex = 7;
 		Parent = Inner;
 	});
 	Library:AddToRegistry(SidebarOuter, {
@@ -5394,7 +5394,7 @@ function Library:CreateWindow(...)
 		BackgroundTransparency = 1;
 		Position = UDim2.fromOffset(4, 6);
 		Size = UDim2.new(1, -8, 1, -12);
-		ZIndex = 21;
+		ZIndex = 8;
 		Parent = SidebarOuter;
 	});
 	local SidebarListLayout = Library:Create('UIListLayout', {
@@ -5671,15 +5671,18 @@ function Library:CreateWindow(...)
 		if Window.TabLayout ~= 'Expandable Sidebar' then return end
 		Window.SidebarExpanded = Expanded == true
 		local Width = Window.SidebarExpanded and SidebarExpandedWidth or SidebarCollapsedWidth
-		local Position = UDim2.new(0, 8 + SidebarExpandedWidth - Width, 0, 25)
+		local ContentOffset = Width + 12
 		local SidebarGoal = UDim2.new(0, Width, 1, -33)
+		local ContentPosition = UDim2.new(0, ContentOffset, 0, 25)
+		local ContentSize = UDim2.new(1, -(ContentOffset + 8), 1, -33)
 		if Instant then
-			SidebarOuter.Position = Position
 			SidebarOuter.Size = SidebarGoal
+			MainSectionOuter.Position = ContentPosition
+			MainSectionOuter.Size = ContentSize
 		else
 			local Info = TweenInfo.new(Window.SidebarTweenTime, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
-			TweenService:Create(SidebarOuter, Info, { Position = Position }):Play()
 			TweenService:Create(SidebarOuter, Info, { Size = SidebarGoal }):Play()
+			TweenService:Create(MainSectionOuter, Info, { Position = ContentPosition, Size = ContentSize }):Play()
 		end
 	end
 
@@ -5694,33 +5697,23 @@ function Library:CreateWindow(...)
 			if SidebarMode then
 				Tab.Button.Parent = SidebarArea
 				Tab.Button.Size = UDim2.new(1, 0, 0, 34)
-				Tab.Button.ZIndex = 22
 				Tab.Label.Position = UDim2.fromOffset(36, 0)
 				Tab.Label.Size = UDim2.new(1, -38, 1, 0)
 				Tab.Label.TextXAlignment = Enum.TextXAlignment.Left
-				Tab.Label.ZIndex = 23
 				Tab.Icon.Visible = true
-				Tab.FallbackIcon.Visible = Tab.Icon.Image == '' or not Tab.Icon.IsLoaded
-				Tab.Icon.ZIndex = 23
-				Tab.FallbackIcon.ZIndex = 23
+				Tab.FallbackIcon.Visible = Tab.Icon.Image == ''
 				Tab.Indicator.Position = UDim2.fromOffset(0, 3)
 				Tab.Indicator.Size = UDim2.new(0, 2, 1, -6)
-				Tab.Indicator.ZIndex = 24
 			else
 				Tab.Button.Parent = TabArea
 				Tab.Button.Size = Tab.TopSize
-				Tab.Button.ZIndex = 1
 				Tab.Label.Position = UDim2.fromOffset(0, 0)
 				Tab.Label.Size = UDim2.new(1, 0, 1, -1)
 				Tab.Label.TextXAlignment = Enum.TextXAlignment.Center
-				Tab.Label.ZIndex = 1
 				Tab.Icon.Visible = false
 				Tab.FallbackIcon.Visible = false
-				Tab.Icon.ZIndex = 3
-				Tab.FallbackIcon.ZIndex = 3
 				Tab.Indicator.Position = UDim2.fromOffset(0, 0)
 				Tab.Indicator.Size = UDim2.new(1, 0, 0, 2)
-				Tab.Indicator.ZIndex = 4
 			end
 		end
 
@@ -5772,12 +5765,11 @@ function Library:CreateWindow(...)
         });
 		local IconName = DefaultTabIcons[string.lower(Name)] or 'circle'
 		local IconData = Library:GetCustomIcon(IconName)
-		local TabIconUrl = type(IconData) == 'table' and type(IconData.Url) == 'string' and IconData.Url or ''
 		local TabIcon = Library:Create('ImageLabel', {
 			BackgroundTransparency = 1;
 			Position = UDim2.fromOffset(9, 8);
 			Size = UDim2.fromOffset(18, 18);
-			Image = TabIconUrl;
+			Image = IconData and IconData.Url or '';
 			ImageRectOffset = IconData and IconData.ImageRectOffset or Vector2.zero;
 			ImageRectSize = IconData and IconData.ImageRectSize or Vector2.zero;
 			ImageColor3 = Library.FontColor;
@@ -5796,11 +5788,6 @@ function Library:CreateWindow(...)
 			ZIndex = 3;
 			Parent = TabButton;
 		});
-		TabIcon:GetPropertyChangedSignal('IsLoaded'):Connect(function()
-			if Window.TabLayout == 'Expandable Sidebar' then
-				FallbackIcon.Visible = TabIcon.Image == '' or not TabIcon.IsLoaded
-			end
-		end)
         local TabIndicator = Library:Create('Frame', {
             BackgroundColor3 = Library.AccentColor;
             BorderSizePixel = 0;
