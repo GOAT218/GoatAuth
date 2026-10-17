@@ -5406,13 +5406,44 @@ function Library:CreateWindow(...)
 		Parent = SidebarOuter;
 	});
 	Library:AddToRegistry(SidebarHeader, { TextColor3 = 'AccentColor' });
+	local SidebarAvatar = Library:Create('ImageLabel', {
+		Name = 'SidebarPlayerAvatar';
+		BackgroundColor3 = Library.MainColor;
+		BorderSizePixel = 0;
+		Position = UDim2.new(0, 10, 1, -43);
+		Size = UDim2.fromOffset(32, 32);
+		Image = '';
+		ZIndex = 74;
+		Parent = SidebarOuter;
+	});
+	Library:Create('UICorner', { CornerRadius = UDim.new(1, 0); Parent = SidebarAvatar; });
+	Library:AddToRegistry(SidebarAvatar, { BackgroundColor3 = 'MainColor' });
+	task.spawn(function()
+		local Success, Thumbnail = pcall(Players.GetUserThumbnailAsync, Players, LocalPlayer.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size150x150)
+		if Success and SidebarAvatar.Parent then SidebarAvatar.Image = Thumbnail end
+	end)
 	local SidebarFooter = Library:CreateLabel({
 		Text = LocalPlayer.DisplayName;
 		TextSize = 12;
 		TextTruncate = Enum.TextTruncate.AtEnd;
 		BackgroundTransparency = 1;
-		Position = UDim2.new(0, 6, 1, -46);
-		Size = UDim2.new(1, -12, 0, 38);
+		Font = Enum.Font.GothamMedium;
+		TextXAlignment = Enum.TextXAlignment.Left;
+		Position = UDim2.new(0, 48, 1, -45);
+		Size = UDim2.new(1, -52, 0, 18);
+		ZIndex = 74;
+		Parent = SidebarOuter;
+	});
+	local SidebarUsername = Library:CreateLabel({
+		Text = '@' .. LocalPlayer.Name;
+		TextSize = 11;
+		Font = Enum.Font.Gotham;
+		TextTransparency = 0.35;
+		TextTruncate = Enum.TextTruncate.AtEnd;
+		TextXAlignment = Enum.TextXAlignment.Left;
+		BackgroundTransparency = 1;
+		Position = UDim2.new(0, 48, 1, -27);
+		Size = UDim2.new(1, -52, 0, 16);
 		ZIndex = 74;
 		Parent = SidebarOuter;
 	});
@@ -5720,6 +5751,7 @@ function Library:CreateWindow(...)
 	Library:GiveSignal(NavigationExtension.Changed:Connect(SetNavigationWindowExtension))
 	local function UpdateSidebarLabels(Expanded, Instant)
 		SidebarFooter.Visible = Expanded
+		SidebarUsername.Visible = Expanded
 		for _, Tab in next, Window.Tabs do
 			if Window.TabLayout == 'Expandable Sidebar' then
 				local IconPosition = UDim2.new(0, Expanded and 7 or 17, 0.5, -10)
