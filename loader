@@ -1,6 +1,5 @@
 local prefix = ""
 
--- Check if user has lp_key and add to prefix
 if lp_key then
     prefix = "local lp_key = '" .. lp_key .. "'\n"
 end
@@ -19,6 +18,7 @@ local Scripts = {
     [6583326485] = "97149832134761200323", -- Groundwars
     [6726637224] = "38051361310081996139", -- StreetLife
     [97314177]   = "89066052075251198843", -- NinjaTycoon
+    [4730278139] = "46358056084884904300", -- UBG
     [5200655965] = "05018654462611029174", -- Project Smash
     [9807649116] = "43582573096609583474", -- Tactical Swat
     [3258873704] = "81982446223044293233"  -- Skywars
@@ -37,7 +37,6 @@ local function LoadScript()
         print("Game ID: " .. GameId)
         print("Script ID: " .. scriptId)
         
-        -- Try to load SDK
         local sdkSuccess, sdk = pcall(function()
             return loadstring(game:HttpGet("https://sdk.luaprot.net/"))()
         end)
