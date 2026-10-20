@@ -18,40 +18,20 @@ local RenderStepped = RunService.RenderStepped;
 local LocalPlayer = Players.LocalPlayer or Players.PlayerAdded:Wait()
 local Mouse = cloneref(LocalPlayer:GetMouse())
 
--- Soft Drawing stub (no errors, no real Drawing API — safer for games that scan Drawing/CoreGui)
-local function makeFakeDrawingObject()
-	local obj = {
-		Visible = false,
-		Transparency = 1,
-		Color = Color3.new(1, 1, 1),
-		Thickness = 1,
-		Filled = false,
-		Position = Vector2.zero,
-		Size = Vector2.zero,
-		PointA = Vector2.zero,
-		PointB = Vector2.zero,
-		PointC = Vector2.zero,
-	}
-	function obj:Remove() end
-	function obj:Destroy() end
-	return obj
+local DrawingLib = { drawing_replaced = true, new = function(...) error("Drawing is not supported.") end }
+local IsBadDrawingLib = false
+
+if typeof(getgenv) == "function" and typeof(getgenv().Drawing) == "table" then
+	DrawingLib = getgenv().Drawing
 end
-local DrawingLib = {
-	drawing_replaced = true,
-	new = function(...)
-		return makeFakeDrawingObject()
-	end,
-}
-local IsBadDrawingLib = true
 
 local setclipboard = setclipboard or nil
 local getgenv = getgenv or function()
 	return shared
 end
--- Never ProtectGui / gethui→CoreGui for BAC-sensitive games; always PlayerGui.
-local ProtectGui = function() end
-local GetHUI = function()
-	return LocalPlayer:WaitForChild("PlayerGui", math.huge)
+local ProtectGui = protectgui or (syn and syn.protect_gui) or function() end
+local GetHUI = gethui or function()
+	return CoreGui
 end
 
 local assert = function(condition, errorMessage)
@@ -62,13 +42,15 @@ end
 
 local function SafeParentUI(Instance, Parent)
 	local success, _error = pcall(function()
+		if not Parent then
+			Parent = CoreGui
+		end
+
 		local DestinationParent
 		if typeof(Parent) == "function" then
 			DestinationParent = Parent()
-		elseif Parent then
-			DestinationParent = Parent
 		else
-			DestinationParent = LocalPlayer:WaitForChild("PlayerGui", math.huge)
+			DestinationParent = Parent
 		end
 
 		Instance.Parent = DestinationParent
@@ -80,7 +62,12 @@ local function SafeParentUI(Instance, Parent)
 end
 
 local function ParentUI(UI, SkipHiddenUI)
-	-- Always PlayerGui — skip CoreGui / gethui path
+	if SkipHiddenUI then
+		SafeParentUI(UI, CoreGui)
+		return
+	end
+
+	pcall(ProtectGui, UI)
 	SafeParentUI(UI, GetHUI)
 end
 
@@ -576,7 +563,7 @@ function Library:SetFontSize(Size)
             end
         end
     end
-    local mobileUI = LocalPlayer:FindFirstChild("PlayerGui") and LocalPlayer.PlayerGui:FindFirstChild("LinoriaMobileUI")
+    local mobileUI = CoreGui:FindFirstChild("LinoriaMobileUI")
     if mobileUI then
         for _, descendant in pairs(mobileUI:GetDescendants()) do
             if descendant:IsA("TextLabel") or descendant:IsA("TextBox") or descendant:IsA("TextButton") then
@@ -6492,12 +6479,12 @@ function Library:CreateWindow(...)
             task.spawn(function()
                 local State = InputService.MouseIconEnabled;
 
-                local Cursor = DrawingLib.new('Triangle');
+                local Cursor = Drawing.new('Triangle');
                 Cursor.Thickness = 1;
                 Cursor.Filled = true;
                 Cursor.Visible = true;
 
-                local CursorOutline = DrawingLib.new('Triangle');
+                local CursorOutline = Drawing.new('Triangle');
                 CursorOutline.Thickness = 1;
                 CursorOutline.Filled = false;
                 CursorOutline.Color = Color3.new(0, 0, 0);
@@ -6661,8 +6648,8 @@ if InputService.TouchEnabled then
     local MobileGui = Instance.new("ScreenGui")
     MobileGui.Name = "LinoriaMobileUI"
     MobileGui.ZIndexBehavior = Enum.ZIndexBehavior.Global
-    MobileGui.ResetOnSpawn = false
-    ParentUI(MobileGui)
+    ProtectGui(MobileGui)
+    MobileGui.Parent = CoreGui
 
     local BTN_W, BTN_H = 88, 30
     local BTN_GAP      = 40  
@@ -6832,8 +6819,7 @@ function Library:Loader(Config)
 	local BlackFrame = Instance.new("Frame")
 
 	Loader.Name = Library:RandomString()
-	Loader.ResetOnSpawn = false
-	ParentUI(Loader)
+	Loader.Parent = CoreGui
 	Loader.IgnoreGuiInset = true
 	Loader.ZIndexBehavior = Enum.ZIndexBehavior.Global
 
