@@ -5454,17 +5454,16 @@ function Library:CreateWindow(...)
 		BorderColor3 = 'OutlineColor';
 	});
 	Library:Create('UICorner', { CornerRadius = UDim.new(0, 8); Parent = SidebarOuter; });
-	local SidebarHeader = Library:CreateLabel({
-		Text = '✦';
-		TextSize = 28;
+	local SidebarLogo = Library:Create('ImageLabel', {
+		Name = 'SidebarLogo';
 		BackgroundTransparency = 1;
-		Position = UDim2.fromOffset(4, 8);
-		Size = UDim2.new(1, -8, 0, 50);
-		TextColor3 = Library.AccentColor;
+		Position = UDim2.new(0.5, -22, 0, 8);
+		Size = UDim2.fromOffset(44, 44);
+		Image = 'rbxassetid://72884321379696';
+		ScaleType = Enum.ScaleType.Fit;
 		ZIndex = 74;
 		Parent = SidebarOuter;
 	});
-	Library:AddToRegistry(SidebarHeader, { TextColor3 = 'AccentColor' });
 	local SidebarAvatar = Library:Create('ImageLabel', {
 		Name = 'SidebarPlayerAvatar';
 		BackgroundColor3 = Library.MainColor;
