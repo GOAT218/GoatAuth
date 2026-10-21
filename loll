@@ -6614,6 +6614,56 @@ function Library:CreateWindow(...)
         end
     end))
 
+	local MobileToggle = Library:Create('ImageButton', {
+		Name = 'MobileWindowToggle';
+		Active = true;
+		AutoButtonColor = false;
+		BackgroundColor3 = Library.MainColor;
+		BorderSizePixel = 0;
+		Image = 'rbxassetid://120910636292753';
+		Position = UDim2.new(0, 18, 0.5, -28);
+		Size = UDim2.fromOffset(56, 56);
+		Visible = Library.IsMobile;
+		ZIndex = 200;
+		Parent = ScreenGui;
+	})
+	Library:Create('UICorner', { CornerRadius = UDim.new(1, 0); Parent = MobileToggle; })
+	local MobileToggleStroke = Library:Create('UIStroke', {
+		Color = Library.AccentColor;
+		Thickness = 2;
+		Transparency = 0.1;
+		Parent = MobileToggle;
+	})
+	Library:AddToRegistry(MobileToggle, { BackgroundColor3 = 'MainColor'; })
+	Library:AddToRegistry(MobileToggleStroke, { Color = 'AccentColor'; })
+
+	Library:GiveSignal(MobileToggle.InputBegan:Connect(function(Input)
+		if not Library:IsPointerInput(Input) then return end
+		local StartInput = Input.Position
+		local StartPosition = MobileToggle.AbsolutePosition
+		local Moved = false
+		local MoveConnection, EndConnection
+
+		MoveConnection = InputService.InputChanged:Connect(function(Change)
+			if Change.UserInputType ~= Enum.UserInputType.MouseMovement and Change ~= Input then return end
+			local Delta = Change.Position - StartInput
+			if Delta.Magnitude >= 6 then Moved = true end
+			if Moved then
+				local Viewport = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize or Vector2.new(1920, 1080)
+				local X = math.clamp(StartPosition.X + Delta.X, 0, math.max(0, Viewport.X - MobileToggle.AbsoluteSize.X))
+				local Y = math.clamp(StartPosition.Y + Delta.Y, 0, math.max(0, Viewport.Y - MobileToggle.AbsoluteSize.Y))
+				MobileToggle.Position = UDim2.fromOffset(X, Y)
+			end
+		end)
+
+		EndConnection = InputService.InputEnded:Connect(function(EndedInput)
+			if EndedInput ~= Input and EndedInput.UserInputType ~= Enum.UserInputType.Touch then return end
+			MoveConnection:Disconnect()
+			EndConnection:Disconnect()
+			if not Moved then task.spawn(Library.Toggle) end
+		end)
+	end))
+
     if Config.AutoShow then task.spawn(Library.Toggle) end
 
     function Window:SetWindowTitle(Title)
