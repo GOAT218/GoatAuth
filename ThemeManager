@@ -565,7 +565,7 @@ local ThemeManager = {} do
 		self.InterfaceSettingsTabs[tab] = true
 		local Library = self.Library
 		local Window = Library.Window
-		local LanguageGroup = tab:AddRightGroupbox('Language')
+		local LanguageGroup = tab:AddRightGroupbox('')
 		local LANGUAGE_FILE = self.Folder .. '/ui-language.txt'
 		local LANGUAGE_CHOICES = {
 			'🇺🇸 English',
@@ -615,20 +615,18 @@ local ThemeManager = {} do
 				if writefile then pcall(writefile, LANGUAGE_FILE, value) end
 			end,
 		})
-		LanguageGroup:AddLabel('Translations are downloaded automatically and cached locally.', true)
-		
-		local NavigationGroup = tab:AddRightGroupbox('Navigation Layout')
+		local NavigationGroup = tab:AddRightGroupbox('')
 		NavigationGroup:AddDropdown('NavigationLayout', {
 			Text = 'Tab position',
 			Values = { 'Top Tabs', 'Expandable Sidebar' },
-			Default = 'Top Tabs',
+			Default = 'Expandable Sidebar',
 			Callback = function(value)
 				Window:SetTabLayout(value)
 			end,
 		})
 		NavigationGroup:AddSlider('SidebarAnimationSpeed', {
 			Text = 'Sidebar animation speed',
-			Default = 18,
+			Default = 60,
 			Min = 5,
 			Max = 60,
 			Rounding = 0,
@@ -637,9 +635,6 @@ local ThemeManager = {} do
 				Window:SetSidebarAnimationSpeed(value / 100)
 			end,
 		})
-		NavigationGroup:AddLabel('The sidebar expands when your pointer moves over it.', true)
-		
-		
 	end
 	function ThemeManager:ApplyToTab(tab)
 		assert(self.Library, 'ThemeManager:ApplyToTab -> Must set ThemeManager.Library first!')
