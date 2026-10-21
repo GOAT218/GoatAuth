@@ -565,7 +565,7 @@ local ThemeManager = {} do
 		self.InterfaceSettingsTabs[tab] = true
 		local Library = self.Library
 		local Window = Library.Window
-		local LanguageGroup = tab:AddRightGroupbox('Language')
+		local UIGroup = tab:AddRightGroupbox('UI')
 		local LANGUAGE_FILE = self.Folder .. '/ui-language.txt'
 		local LANGUAGE_CHOICES = {
 			'🇺🇸 English',
@@ -606,7 +606,7 @@ local ThemeManager = {} do
 			local loadedLanguage = readfile(LANGUAGE_FILE)
 			if LANGUAGE_CODES[loadedLanguage] then savedLanguage = loadedLanguage end
 		end
-		LanguageGroup:AddDropdown('UILanguage', {
+		UIGroup:AddDropdown('UILanguage', {
 			Text = 'Interface language',
 			Values = LANGUAGE_CHOICES,
 			Default = table.find(LANGUAGE_CHOICES, savedLanguage) or 1,
@@ -615,8 +615,7 @@ local ThemeManager = {} do
 				if writefile then pcall(writefile, LANGUAGE_FILE, value) end
 			end,
 		})
-		local NavigationGroup = tab:AddRightGroupbox('Navigation Layout')
-		NavigationGroup:AddDropdown('NavigationLayout', {
+		UIGroup:AddDropdown('NavigationLayout', {
 			Text = 'Tab position',
 			Values = { 'Top Tabs', 'Expandable Sidebar' },
 			Default = 'Expandable Sidebar',
@@ -624,7 +623,7 @@ local ThemeManager = {} do
 				Window:SetTabLayout(value)
 			end,
 		})
-		NavigationGroup:AddSlider('SidebarAnimationSpeed', {
+		UIGroup:AddSlider('SidebarAnimationSpeed', {
 			Text = 'Sidebar animation speed',
 			Default = 60,
 			Min = 5,
