@@ -5509,8 +5509,8 @@ function Library:CreateWindow(...)
 	local SidebarLanguageBar = Library:Create('Frame', {
 		Name = 'SidebarLanguageBar';
 		BackgroundTransparency = 1;
-		Position = UDim2.new(0, 10, 1, -72);
-		Size = UDim2.new(1, -20, 0, 23);
+		Position = UDim2.new(0, 8, 1, -78);
+		Size = UDim2.new(1, -16, 0, 29);
 		Visible = false;
 		ZIndex = 74;
 		Parent = SidebarOuter;
@@ -5532,7 +5532,7 @@ function Library:CreateWindow(...)
 			Font = Enum.Font.GothamMedium;
 			Text = Language.Flag;
 			TextColor3 = Library.FontColor;
-			TextSize = 14;
+			TextSize = 17;
 			Position = UDim2.new((Index - 1) / #QuickLanguages, 1, 0, 0);
 			Size = UDim2.new(1 / #QuickLanguages, -3, 1, 0);
 			ZIndex = 75;
