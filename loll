@@ -5505,6 +5505,48 @@ function Library:CreateWindow(...)
 		ZIndex = 74;
 		Parent = SidebarOuter;
 	});
+	local SidebarLanguageBar = Library:Create('Frame', {
+		Name = 'SidebarLanguageBar';
+		BackgroundTransparency = 1;
+		Position = UDim2.new(0, 48, 1, -69);
+		Size = UDim2.new(1, -52, 0, 20);
+		Visible = false;
+		ZIndex = 74;
+		Parent = SidebarOuter;
+	});
+	local QuickLanguages = {
+		{ Flag = '🇺🇸'; Code = 'en'; Choice = '🇺🇸 English' };
+		{ Flag = '🇧🇷'; Code = 'pt-br'; Choice = '🇧🇷 Português (Brasil)' };
+		{ Flag = '🇪🇸'; Code = 'es'; Choice = '🇪🇸 Español' };
+		{ Flag = '🇷🇺'; Code = 'ru'; Choice = '🇷🇺 Русский' };
+	};
+	for Index, Language in ipairs(QuickLanguages) do
+		local Button = Library:Create('TextButton', {
+			Name = 'Language_' .. Language.Code;
+			AutoButtonColor = false;
+			BackgroundColor3 = Library.MainColor;
+			BackgroundTransparency = 0.15;
+			BorderSizePixel = 0;
+			Font = Enum.Font.GothamMedium;
+			Text = Language.Flag;
+			TextColor3 = Library.FontColor;
+			TextSize = 13;
+			Position = UDim2.new((Index - 1) / #QuickLanguages, 1, 0, 0);
+			Size = UDim2.new(1 / #QuickLanguages, -3, 1, 0);
+			ZIndex = 75;
+			Parent = SidebarLanguageBar;
+		});
+		Library:Create('UICorner', { CornerRadius = UDim.new(0, 4); Parent = Button; });
+		Library:AddToRegistry(Button, { BackgroundColor3 = 'MainColor'; TextColor3 = 'FontColor' });
+		Library:GiveSignal(Button.MouseButton1Click:Connect(function()
+			local LanguageOption = Library.Options and Library.Options.UILanguage;
+			if LanguageOption then
+				LanguageOption:SetValue(Language.Choice);
+			else
+				Library:SetLanguage(Language.Code);
+			end;
+		end));
+	end;
 	local SidebarArea = Library:Create('ScrollingFrame', {
 		BackgroundTransparency = 1;
 		BorderSizePixel = 0;
@@ -5810,6 +5852,7 @@ function Library:CreateWindow(...)
 	local function UpdateSidebarLabels(Expanded, Instant)
 		SidebarFooter.Visible = Expanded
 		SidebarUsername.Visible = Expanded
+		SidebarLanguageBar.Visible = Expanded
 		for _, Tab in next, Window.Tabs do
 			if Window.TabLayout == 'Expandable Sidebar' then
 				local IconPosition = UDim2.new(0, Expanded and 7 or 17, 0.5, -10)
