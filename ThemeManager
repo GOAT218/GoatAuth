@@ -638,6 +638,13 @@ local ThemeManager = {} do
 				Library.ShowCustomCursor = value
 			end,
 		})
+		UIGroup:AddToggle('ShowFloatingLogo', {
+			Text = 'Floating logo button',
+			Default = Library.IsMobile,
+			Callback = function(value)
+				Library:SetFloatingLogoVisible(value)
+			end,
+		})
 	end
 	function ThemeManager:ApplyToTab(tab)
 		assert(self.Library, 'ThemeManager:ApplyToTab -> Must set ThemeManager.Library first!')
