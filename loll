@@ -6482,16 +6482,19 @@ function Library:CreateWindow(...)
                 local Cursor = Drawing.new('Triangle');
                 Cursor.Thickness = 1;
                 Cursor.Filled = true;
-                Cursor.Visible = true;
+                Cursor.Visible = Library.ShowCustomCursor;
 
                 local CursorOutline = Drawing.new('Triangle');
                 CursorOutline.Thickness = 1;
                 CursorOutline.Filled = false;
                 CursorOutline.Color = Color3.new(0, 0, 0);
-                CursorOutline.Visible = true;
+                CursorOutline.Visible = Library.ShowCustomCursor;
 
                 while Library.Toggled and ScreenGui.Parent do
-                    InputService.MouseIconEnabled = false;
+					local CustomCursorEnabled = Library.ShowCustomCursor ~= false;
+					InputService.MouseIconEnabled = not CustomCursorEnabled;
+					Cursor.Visible = CustomCursorEnabled;
+					CursorOutline.Visible = CustomCursorEnabled;
 
                     local mPos = InputService:GetMouseLocation();
 
