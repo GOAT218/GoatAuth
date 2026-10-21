@@ -499,8 +499,7 @@ local ThemeManager = {} do
 
 			self:ApplyTheme(name)
 			self.Library:Notify(string.format('Loaded theme %q', name))
-		end)
-		groupbox:AddButton('Overwrite theme', function()
+		end):AddButton('Overwrite theme', function()
 			local name = Options.ThemeManager_CustomThemeList.Value
 
 			self:SaveCustomTheme(name)
@@ -518,8 +517,7 @@ local ThemeManager = {} do
 			self.Library:Notify(string.format('Deleted theme %q', name))
 			Options.ThemeManager_CustomThemeList:SetValues(self:ReloadCustomThemes())
 			Options.ThemeManager_CustomThemeList:SetValue(nil)
-		end)
-		groupbox:AddButton('Refresh list', function()
+		end):AddButton('Refresh list', function()
 			Options.ThemeManager_CustomThemeList:SetValues(self:ReloadCustomThemes())
 			Options.ThemeManager_CustomThemeList:SetValue(nil)
 		end)
@@ -528,8 +526,7 @@ local ThemeManager = {} do
 				self:SaveDefault(Options.ThemeManager_CustomThemeList.Value)
 				self.Library:Notify(string.format('Set default theme to %q', Options.ThemeManager_CustomThemeList.Value))
 			end
-		end)
-		groupbox:AddButton('Reset default', function()
+		end):AddButton('Reset default', function()
 			local success = pcall(delfile, self.Folder .. '/themes/default.txt')
 			if not success then
 				self.Library:Notify('Failed to reset default: delete file error')
