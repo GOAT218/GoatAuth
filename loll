@@ -6618,7 +6618,7 @@ function Library:CreateWindow(...)
 		Name = 'MobileWindowToggle';
 		Active = true;
 		AutoButtonColor = false;
-		BackgroundColor3 = Library.MainColor;
+		BackgroundTransparency = 1;
 		BorderSizePixel = 0;
 		Image = 'rbxassetid://120910636292753';
 		Position = UDim2.new(0, 18, 0.5, -28);
@@ -6633,15 +6633,6 @@ function Library:CreateWindow(...)
 		Library.ShowFloatingLogo = Visible == true
 		MobileToggle.Visible = Library.ShowFloatingLogo
 	end
-	Library:Create('UICorner', { CornerRadius = UDim.new(1, 0); Parent = MobileToggle; })
-	local MobileToggleStroke = Library:Create('UIStroke', {
-		Color = Library.AccentColor;
-		Thickness = 2;
-		Transparency = 0.1;
-		Parent = MobileToggle;
-	})
-	Library:AddToRegistry(MobileToggle, { BackgroundColor3 = 'MainColor'; })
-	Library:AddToRegistry(MobileToggleStroke, { Color = 'AccentColor'; })
 	Library:SetFloatingLogoVisible(Library.IsMobile)
 
 	Library:GiveSignal(MobileToggle.InputBegan:Connect(function(Input)
