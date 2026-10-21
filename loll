@@ -5789,7 +5789,7 @@ function Library:CreateWindow(...)
 		misc = '10709782497', ['ui settings'] = '10734950309', settings = '10734950309',
 	}
 	Window.TabLayout = 'Top Tabs'
-	Window.SidebarTweenTime = 0.18
+	Window.SidebarTweenTime = 0.6
 	Window.SidebarExpanded = false
 	local SidebarTween
 	local WindowLayoutBase
@@ -5967,7 +5967,7 @@ function Library:CreateWindow(...)
 	end
 
 	function Window:SetSidebarAnimationSpeed(Seconds)
-		Window.SidebarTweenTime = math.clamp(tonumber(Seconds) or 0.18, 0.05, 0.6)
+		Window.SidebarTweenTime = math.clamp(tonumber(Seconds) or 0.6, 0.05, 0.6)
 	end
 
 	SidebarOuter.MouseEnter:Connect(function()
@@ -5976,6 +5976,7 @@ function Library:CreateWindow(...)
 	SidebarOuter.MouseLeave:Connect(function()
 		SetSidebarExpanded(false, false)
 	end)
+	Window:SetTabLayout('Expandable Sidebar')
 
     function Window:AddTab(Name)
 		Window._NavigationTabCount = (Window._NavigationTabCount or 0) + 1
@@ -7014,3 +7015,4 @@ function Library:Loader(Config)
 end
 
 return Library
+
