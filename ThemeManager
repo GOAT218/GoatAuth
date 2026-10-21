@@ -631,6 +631,13 @@ local ThemeManager = {} do
 				Window:SetSidebarAnimationSpeed(value / 100)
 			end,
 		})
+		UIGroup:AddToggle('ShowCustomCursor', {
+			Text = 'Custom cursor',
+			Default = true,
+			Callback = function(value)
+				Library.ShowCustomCursor = value
+			end,
+		})
 	end
 	function ThemeManager:ApplyToTab(tab)
 		assert(self.Library, 'ThemeManager:ApplyToTab -> Must set ThemeManager.Library first!')
