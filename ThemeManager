@@ -10,9 +10,6 @@ local clonefunction = (clonefunction or copyfunction or function(func)
 	return func
 end)
 
-local httprequest = request or http_request or (http and http.request)
-local getassetfunc = getcustomasset
-
 local HttpService = cloneref(game:GetService('HttpService'));
 local RunService = cloneref(game:GetService('RunService'));
 local isfolder, isfile, listfiles = isfolder, isfile, listfiles;
@@ -52,7 +49,7 @@ if typeof(clonefunction) == 'function' then
 end
 
 local ThemeManager = {} do
-	local ThemeFields = { 'FontColor', 'MainColor', 'AccentColor', 'BackgroundColor', 'OutlineColor', 'VideoLink' }
+	local ThemeFields = { 'FontColor', 'MainColor', 'AccentColor', 'BackgroundColor', 'OutlineColor' }
 	ThemeManager.Folder = 'LinoriaLibSettings'
 	ThemeManager.DefaultTheme = 'Halloween'
 
@@ -66,40 +63,6 @@ local ThemeManager = {} do
 		['Halloween'] = { 33, { FontColor = 'f1ebe1', MainColor = '140f0d', AccentColor = 'ff6900', BackgroundColor = '0e0c0c', OutlineColor = '1f1f1f' } },
 		['Midnight Sakura'] = { 0, { FontColor = 'f7efff', MainColor = '121020', AccentColor = 'ff6fb5', BackgroundColor = '090814', OutlineColor = '29213d' } },
 	}
-
-	function ApplyBackgroundVideo(videoLink)
-		if
-			typeof(videoLink) ~= 'string' or
-			not (getassetfunc and writefile and readfile and isfile) or
-			not (ThemeManager.Library and ThemeManager.Library.InnerVideoBackground)
-		then return end
-
-		local videoInstance = ThemeManager.Library.InnerVideoBackground;
-		local extension = videoLink:match('.*/(.-)?') or videoLink:match('.*/(.-)$');
-		extension = tostring(extension);
-		local _, domain = videoLink:match('^(https?://)([^/]+)');
-		domain = tostring(domain);
-
-		if videoLink == '' then
-			videoInstance:Pause();
-			videoInstance.Video = '';
-			videoInstance.Visible = false;
-			return
-		end
-		if #extension > 5 and string.sub(extension, -5) ~= '.webm' then return end
-
-		local videoFile = ThemeManager.Folder .. '/themes/' .. string.gsub(domain .. extension, 0, 249) .. '.webm';
-		if not isfile(videoFile) then
-			local success, requestRes = pcall(httprequest, { Url = videoLink, Method = 'GET' })
-			if not (success and typeof(requestRes) == 'table' and typeof(requestRes.Body) == 'string') then return end
-
-			writefile(videoFile, requestRes.Body)
-		end
-
-		videoInstance.Video = getassetfunc(videoFile);
-		videoInstance.Visible = true;
-		videoInstance:Play();
-	end
 
 	function ThemeManager:SetLibrary(library)
 		self.Library = library
@@ -304,21 +267,9 @@ local ThemeManager = {} do
 		self:SetHalloweenDecorations(theme == 'Halloween')
 		self:SetSakuraDecorations(theme == 'Midnight Sakura')
 
-		if self.Library.InnerVideoBackground ~= nil then
-			self.Library.InnerVideoBackground.Visible = false
-		end
-
 		local scheme = data[2]
 		for idx, col in next, customThemeData or scheme do
-			if idx == 'VideoLink' then
-				self.Library[idx] = col;
-
-				if Options[idx] then
-					Options[idx]:SetValue(col)
-				end
-
-				ApplyBackgroundVideo(col)
-			else
+			if table.find(ThemeFields, idx) then
 				self.Library[idx] = Color3.fromHex(col);
 
 				if Options[idx] then
@@ -331,17 +282,9 @@ local ThemeManager = {} do
 	end
 
 	function ThemeManager:ThemeUpdate()
-		if self.Library.InnerVideoBackground ~= nil then
-			self.Library.InnerVideoBackground.Visible = false
-		end
-
 		for i, field in next, ThemeFields do
 			if Options and Options[field] then
 				self.Library[field] = Options[field].Value
-
-				if field == 'VideoLink' then
-					ApplyBackgroundVideo(Options[field].Value)
-				end
 			end
 		end
 
@@ -398,11 +341,7 @@ local ThemeManager = {} do
 
 		local theme = {}
 		for _, field in next, ThemeFields do
-			if field == 'VideoLink' then
-				theme[field] = Options[field].Value
-			else
-				theme[field] = Options[field].Value:ToHex()
-			end
+			theme[field] = Options[field].Value:ToHex()
 		end
 
 		writefile(self.Folder .. '/themes/' .. file .. '.json', HttpService:JSONEncode(theme))
@@ -453,8 +392,6 @@ local ThemeManager = {} do
 		groupbox:AddLabel('Accent color'):AddColorPicker('AccentColor', { Default = self.Library.AccentColor });
 		groupbox:AddLabel('Outline color'):AddColorPicker('OutlineColor', { Default = self.Library.OutlineColor });
 		groupbox:AddLabel('Font color'):AddColorPicker('FontColor', { Default = self.Library.FontColor });
-		groupbox:AddInput('VideoLink', { Text = '.webm Video Background (Link)', Default = self.Library.VideoLink });
-
 		local ThemesArray = {}
 		for Name, Theme in next, self.BuiltInThemes do
 			table.insert(ThemesArray, Name)
