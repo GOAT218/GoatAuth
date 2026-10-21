@@ -433,6 +433,7 @@ function Library:SetLanguage(Language)
 	Language = tostring(Language or 'en'):lower()
 	if not SupportedLanguages[Language] then Language = 'en' end
 	self.Language = Language
+	if self._SidebarLanguageUpdater then self._SidebarLanguageUpdater(Language) end
 	self._LanguageGeneration = (self._LanguageGeneration or 0) + 1
 	local Generation = self._LanguageGeneration
 	local Queue = {}
@@ -5508,8 +5509,8 @@ function Library:CreateWindow(...)
 	local SidebarLanguageBar = Library:Create('Frame', {
 		Name = 'SidebarLanguageBar';
 		BackgroundTransparency = 1;
-		Position = UDim2.new(0, 48, 1, -69);
-		Size = UDim2.new(1, -52, 0, 20);
+		Position = UDim2.new(0, 10, 1, -72);
+		Size = UDim2.new(1, -20, 0, 23);
 		Visible = false;
 		ZIndex = 74;
 		Parent = SidebarOuter;
@@ -5520,6 +5521,7 @@ function Library:CreateWindow(...)
 		{ Flag = '🇪🇸'; Code = 'es'; Choice = '🇪🇸 Español' };
 		{ Flag = '🇷🇺'; Code = 'ru'; Choice = '🇷🇺 Русский' };
 	};
+	local LanguageStrokes = {};
 	for Index, Language in ipairs(QuickLanguages) do
 		local Button = Library:Create('TextButton', {
 			Name = 'Language_' .. Language.Code;
@@ -5530,13 +5532,20 @@ function Library:CreateWindow(...)
 			Font = Enum.Font.GothamMedium;
 			Text = Language.Flag;
 			TextColor3 = Library.FontColor;
-			TextSize = 13;
+			TextSize = 14;
 			Position = UDim2.new((Index - 1) / #QuickLanguages, 1, 0, 0);
 			Size = UDim2.new(1 / #QuickLanguages, -3, 1, 0);
 			ZIndex = 75;
 			Parent = SidebarLanguageBar;
 		});
 		Library:Create('UICorner', { CornerRadius = UDim.new(0, 4); Parent = Button; });
+		local Stroke = Library:Create('UIStroke', {
+			Color = Color3.new(1, 1, 1);
+			Thickness = 1;
+			Transparency = 1;
+			Parent = Button;
+		});
+		LanguageStrokes[Language.Code] = Stroke;
 		Library:AddToRegistry(Button, { BackgroundColor3 = 'MainColor'; TextColor3 = 'FontColor' });
 		Library:GiveSignal(Button.MouseButton1Click:Connect(function()
 			local LanguageOption = Library.Options and Library.Options.UILanguage;
@@ -5547,6 +5556,12 @@ function Library:CreateWindow(...)
 			end;
 		end));
 	end;
+	Library._SidebarLanguageUpdater = function(Language)
+		for Code, Stroke in pairs(LanguageStrokes) do
+			Stroke.Transparency = Code == Language and 0 or 1;
+		end;
+	end;
+	Library._SidebarLanguageUpdater(Library.Language);
 	local SidebarArea = Library:Create('ScrollingFrame', {
 		BackgroundTransparency = 1;
 		BorderSizePixel = 0;
