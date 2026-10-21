@@ -247,7 +247,6 @@ local Library = {
     KeybindContainer = nil;
     Window = { Holder = nil; Tabs = {}; };
 
-    VideoLink = "";
 	Language = 'en';
 	TranslationCache = {};
 	LanguageChanged = nil;
@@ -5623,20 +5622,6 @@ function Library:CreateWindow(...)
     Library:Create('UICorner', { CornerRadius = UDim.new(0, 8); Parent = TabContainer; });
     TabContainer.ClipsDescendants = true;
 
-    local InnerVideoBackground = Library:Create('VideoFrame', {
-        BackgroundColor3 = Library.MainColor;
-        BorderMode = Enum.BorderMode.Inset;
-        BorderSizePixel = 0;
-        Position = UDim2.new(0, 1, 0, 1);
-        Size = UDim2.new(1, -2, 1, -2);
-        ZIndex = 2;
-        Visible = false;
-        Volume = 0;
-        Looped = true;
-        Parent = TabContainer;
-    });
-    Library.InnerVideoBackground = InnerVideoBackground;
-
     local BackgroundImage = Library:Create('ImageLabel', {
         Image = '';
         Position = UDim2.fromScale(0, 0);
@@ -6677,17 +6662,6 @@ function Library:CreateWindow(...)
             BackgroundImage.Visible = true;
         else
             BackgroundImage.Visible = false;
-        end;
-    end;
-
-    function Window:SetVideoBackground(videoId)
-        if type(videoId) == 'string' and videoId ~= '' then
-            InnerVideoBackground.Video = videoId;
-            InnerVideoBackground.Visible = true;
-            pcall(function() InnerVideoBackground:Play() end);
-        else
-            InnerVideoBackground.Visible = false;
-            pcall(function() InnerVideoBackground:Pause() end);
         end;
     end;
 
