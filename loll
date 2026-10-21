@@ -6033,6 +6033,12 @@ function Library:CreateWindow(...)
 	SidebarOuter.MouseLeave:Connect(function()
 		SetSidebarExpanded(false, false)
 	end)
+	SidebarLogo.Active = true
+	Library:GiveSignal(SidebarLogo.InputBegan:Connect(function(Input)
+		if Input.UserInputType == Enum.UserInputType.Touch then
+			SetSidebarExpanded(not Window.SidebarExpanded, false)
+		end
+	end))
 	Window:SetTabLayout('Expandable Sidebar')
 
     function Window:AddTab(Name)
