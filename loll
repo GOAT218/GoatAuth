@@ -6627,6 +6627,12 @@ function Library:CreateWindow(...)
 		ZIndex = 200;
 		Parent = ScreenGui;
 	})
+	Library.MobileWindowToggle = MobileToggle
+	Library.ShowFloatingLogo = Library.IsMobile
+	function Library:SetFloatingLogoVisible(Visible)
+		Library.ShowFloatingLogo = Visible == true
+		MobileToggle.Visible = Library.ShowFloatingLogo
+	end
 	Library:Create('UICorner', { CornerRadius = UDim.new(1, 0); Parent = MobileToggle; })
 	local MobileToggleStroke = Library:Create('UIStroke', {
 		Color = Library.AccentColor;
@@ -6636,6 +6642,7 @@ function Library:CreateWindow(...)
 	})
 	Library:AddToRegistry(MobileToggle, { BackgroundColor3 = 'MainColor'; })
 	Library:AddToRegistry(MobileToggleStroke, { Color = 'AccentColor'; })
+	Library:SetFloatingLogoVisible(Library.IsMobile)
 
 	Library:GiveSignal(MobileToggle.InputBegan:Connect(function(Input)
 		if not Library:IsPointerInput(Input) then return end
