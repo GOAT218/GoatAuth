@@ -5459,7 +5459,7 @@ function Library:CreateWindow(...)
 		BackgroundTransparency = 1;
 		Position = UDim2.new(0.5, -22, 0, 8);
 		Size = UDim2.fromOffset(44, 44);
-		Image = 'rbxassetid://72884321379696';
+		Image = 'rbxthumb://type=Asset&id=72884321379696&w=420&h=420';
 		ScaleType = Enum.ScaleType.Fit;
 		ZIndex = 74;
 		Parent = SidebarOuter;
