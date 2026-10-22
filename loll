@@ -968,7 +968,7 @@ function Library:BindResizeHandleGhost(clipInst, circleInst, getSize, setSize, o
 
         local moveConn = InputService.InputChanged:Connect(function(mInput)
             if mInput.UserInputType == Enum.UserInputType.MouseMovement
-                or mInput.UserInputType == Enum.UserInputType.Touch then
+                or mInput == Input then
                 dragInput = mInput
             end
         end)
@@ -991,7 +991,7 @@ function Library:BindResizeHandleGhost(clipInst, circleInst, getSize, setSize, o
 
         local endConn
         endConn = InputService.InputEnded:Connect(function(eInput)
-            if not Library:IsPointerInput(eInput) then return end
+            if eInput ~= Input then return end
             dragging = false
             if moveConn then moveConn:Disconnect() end
             if endConn then endConn:Disconnect() end
@@ -6694,14 +6694,14 @@ function Library:CreateWindow(...)
         return Outer.Size.X.Offset, Outer.Size.Y.Offset
     end
 
-    if not Library.IsMobile then
-        local scClip = Library:Create('Frame', {
+    local ResizeHandleSize = Library.IsMobile and 44 or 30
+    local scClip = Library:Create('Frame', {
             Active                  = true;
             AnchorPoint             = Vector2.new(1, 1);
             BackgroundTransparency  = 1;
             ClipsDescendants        = true;
             Position                = UDim2.new(1, 0, 1, 0);
-            Size                    = UDim2.fromOffset(30, 30);
+            Size                    = UDim2.fromOffset(ResizeHandleSize, ResizeHandleSize);
             ZIndex                  = 500;
             Parent                  = Inner;
         })
@@ -6711,7 +6711,7 @@ function Library:CreateWindow(...)
             BackgroundTransparency  = 0.4;
             BorderSizePixel         = 0;
             Position                = UDim2.fromOffset(0, 0);
-            Size                    = UDim2.fromOffset(60, 60);
+            Size                    = UDim2.fromOffset(ResizeHandleSize * 2, ResizeHandleSize * 2);
             ZIndex                  = 501;
             Parent                  = scClip;
         })
@@ -6726,12 +6726,11 @@ function Library:CreateWindow(...)
             scCircle.BackgroundTransparency = 0.4
         end)
 
-        Library:BindResizeHandleGhost(scClip, scCircle, function()
-            return Outer.Size.X.Offset, Outer.Size.Y.Offset
-        end, function(w, h)
-            Window:SetWindowSize(w, h, true)
-        end)
-    end
+    Library:BindResizeHandleGhost(scClip, scCircle, function()
+        return Outer.Size.X.Offset, Outer.Size.Y.Offset
+    end, function(w, h)
+        Window:SetWindowSize(w, h, true)
+    end)
 
     Window.Holder = Outer;
     Library.Window = Window;
