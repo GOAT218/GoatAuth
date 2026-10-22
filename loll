@@ -5881,6 +5881,7 @@ function Library:CreateWindow(...)
 	Library:GiveSignal(Inner:GetPropertyChangedSignal('AbsoluteSize'):Connect(SyncSidebarPosition))
 	Library:GiveSignal(Outer:GetPropertyChangedSignal('Visible'):Connect(SyncSidebarPosition))
 
+	local ScheduleMobileSidebarCollapse
 	local function SetSidebarExpanded(Expanded, Instant)
 		if Window.TabLayout ~= 'Expandable Sidebar' then return end
 		Window.SidebarExpanded = Expanded == true
@@ -5905,6 +5906,9 @@ function Library:CreateWindow(...)
 			local Info = TweenInfo.new(Window.SidebarTweenTime, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
 			SidebarTween = TweenService:Create(NavigationExtension, Info, { Value = Extension })
 			SidebarTween:Play()
+		end
+		if Window.SidebarExpanded and Library.IsMobile and ScheduleMobileSidebarCollapse then
+			ScheduleMobileSidebarCollapse()
 		end
 	end
 	function Window:SetSidebarExpanded(Expanded, Instant)
@@ -6012,12 +6016,36 @@ function Library:CreateWindow(...)
 		Window.SidebarTweenTime = math.clamp(tonumber(Seconds) or 0.6, 0.05, 0.6)
 	end
 
+	local MobileSidebarActivityToken = 0
+	local ActiveSidebarTouches = {}
+	ScheduleMobileSidebarCollapse = function()
+		if not Library.IsMobile or not Window.SidebarExpanded then return end
+		MobileSidebarActivityToken += 1
+		local Token = MobileSidebarActivityToken
+		task.delay(6, function()
+			if Token == MobileSidebarActivityToken and not next(ActiveSidebarTouches) and Window.SidebarExpanded then
+				SetSidebarExpanded(false, false)
+			end
+		end)
+	end
 	SidebarOuter.MouseEnter:Connect(function()
-		SetSidebarExpanded(true, false)
+		if not Library.IsMobile then SetSidebarExpanded(true, false) end
 	end)
 	SidebarOuter.MouseLeave:Connect(function()
-		SetSidebarExpanded(false, false)
+		if not Library.IsMobile then SetSidebarExpanded(false, false) end
 	end)
+	Library:GiveSignal(SidebarOuter.InputBegan:Connect(function(Input)
+		if Library.IsMobile and Input.UserInputType == Enum.UserInputType.Touch then
+			ActiveSidebarTouches[Input] = true
+			MobileSidebarActivityToken += 1
+		end
+	end))
+	Library:GiveSignal(InputService.InputEnded:Connect(function(Input)
+		if ActiveSidebarTouches[Input] then
+			ActiveSidebarTouches[Input] = nil
+			ScheduleMobileSidebarCollapse()
+		end
+	end))
 	SidebarLogo.Active = true
 	Library:GiveSignal(SidebarLogo.InputBegan:Connect(function(Input)
 		if Input.UserInputType == Enum.UserInputType.Touch then
@@ -6732,151 +6760,6 @@ end;
 
 Players.PlayerAdded:Connect(OnPlayerChange);
 Players.PlayerRemoving:Connect(OnPlayerChange);
-
-if InputService.TouchEnabled then
-    local MobileGui = Instance.new("ScreenGui")
-    MobileGui.Name = "LinoriaMobileUI"
-    MobileGui.ZIndexBehavior = Enum.ZIndexBehavior.Global
-    ProtectGui(MobileGui)
-    MobileGui.Parent = CoreGui
-
-    local BTN_W, BTN_H = 88, 30
-    local BTN_GAP      = 40  
-
-    local function CreateMobileButton(name, text, startPos)
-        local Outer = Library:Create('Frame', {
-            Name             = name .. "Outer",
-            BackgroundColor3 = Library.OutlineColor,
-            BorderSizePixel  = 0,
-            Position         = startPos,
-            Size             = UDim2.new(0, BTN_W, 0, BTN_H),
-            ZIndex           = 300,
-            Parent           = MobileGui,
-            Active           = true,
-        })
-        Library:AddToRegistry(Outer, { BackgroundColor3 = 'OutlineColor' })
-
-        local AccentFrame = Library:Create('Frame', {
-            Name             = name .. "Accent",
-            BackgroundColor3 = Library.AccentColor,
-            BorderSizePixel  = 0,
-            Position         = UDim2.new(0, 1, 0, 1),
-            Size             = UDim2.new(1, -2, 1, -2),
-            ZIndex           = 301,
-            Parent           = Outer,
-        })
-        Library:AddToRegistry(AccentFrame, { BackgroundColor3 = 'AccentColor' })
-
-        local Inner = Library:Create('Frame', {
-            Name             = name .. "Inner",
-            BackgroundColor3 = Color3.fromRGB(8, 8, 12),
-            BorderSizePixel  = 0,
-            Position         = UDim2.new(0, 1, 0, 1),
-            Size             = UDim2.new(1, -2, 1, -2),
-            ZIndex           = 302,
-            Parent           = AccentFrame,
-        })
-
-        local GradientOverlay = Library:Create('Frame', {
-            Name             = name .. "Gradient",
-            BackgroundColor3 = Color3.new(1, 1, 1), 
-            BorderSizePixel  = 0,
-            Size             = UDim2.new(1, 0, 1, 0),
-            ZIndex           = 303,
-            Parent           = Inner,
-        })
-        Library:Create('UIGradient', {
-            Transparency = NumberSequence.new({
-                NumberSequenceKeypoint.new(0, 0.90), 
-                NumberSequenceKeypoint.new(1, 1.0)   
-            }),
-            Rotation = 90,
-            Parent = GradientOverlay,
-        })
-
-        local Btn = Library:Create('TextButton', {
-            Name                = name .. "Btn",
-            BackgroundTransparency = 1,
-            Size                = UDim2.new(1, 0, 1, 0),
-            Font                = Enum.Font.Code,
-            Text                = text,
-            TextColor3          = Color3.fromRGB(255, 255, 255),
-            TextSize            = Library.FontSize - 1,
-            ZIndex              = 304,
-            Parent              = Inner,
-            Active              = true,
-        })
-
-        return Outer, Btn
-    end
-
-    local ToggleOuter, ToggleBtn = CreateMobileButton("Toggle", "Toggle UI",  UDim2.new(0, 10, 0, 10))
-    local LockOuter,   LockBtn  = CreateMobileButton("Lock",   "Unlock UI",  UDim2.new(0, 10, 0, 10 + BTN_H + (BTN_GAP - BTN_H)))
-
-    local IsUnlocked = false
-
-    local function BindMobileButtonAction(Btn, Outer, ClickAction)
-        local dragging  = false
-        local dragInput = nil
-        local dragStart = nil
-        local startPos  = nil
-        local hasMoved  = false
-
-        Library:GiveSignal(Btn.InputBegan:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1
-            or input.UserInputType == Enum.UserInputType.Touch then
-                dragging  = true
-                hasMoved  = false
-                dragStart = input.Position
-                startPos  = Outer.Position
-                dragInput = input
-
-                local connection
-                connection = input.Changed:Connect(function()
-                    if input.UserInputState == Enum.UserInputState.End then
-                        dragging = false
-                        connection:Disconnect()
-                        if not hasMoved then
-                            ClickAction()
-                        end
-                    end
-                end)
-            end
-        end))
-
-        Library:GiveSignal(InputService.InputChanged:Connect(function(input)
-            if input == dragInput and dragging then
-                local delta = input.Position - dragStart
-                if delta.Magnitude > 3 then
-                    hasMoved = true
-                end
-                if IsUnlocked and hasMoved then
-                    Outer.Position = UDim2.new(
-                        startPos.X.Scale, startPos.X.Offset + delta.X,
-                        startPos.Y.Scale, startPos.Y.Offset + delta.Y
-                    )
-                end
-            end
-        end))
-    end
-
-    BindMobileButtonAction(ToggleBtn, ToggleOuter, function()
-        Library:Toggle()
-    end)
-
-    BindMobileButtonAction(LockBtn, LockOuter, function()
-        IsUnlocked = not IsUnlocked
-        LockBtn.Text = IsUnlocked and "Lock UI" or "Unlock UI"
-        LockBtn.TextColor3 = IsUnlocked
-            and Library.AccentColor
-            or  Color3.fromRGB(255, 255, 255)
-    end)
-
-    local _origUpdate = Library.UpdateColorsUsingRegistry
-    Library.UpdateColorsUsingRegistry = function(self)
-        _origUpdate(self)
-    end
-end
 
 getgenv().Library = Library
 
