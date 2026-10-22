@@ -3155,6 +3155,8 @@ do
             Values = Info.Values;
             Value = Info.Multi and {};
             Multi = Info.Multi;
+            Searchable = Info.Searchable == true;
+            SearchQuery = '';
             Type = 'Dropdown';
             SpecialType = Info.SpecialType;
             Callback = Info.Callback or function(Value) end;
@@ -3275,11 +3277,39 @@ do
             BackgroundColor3 = 'MainColor';
             BorderColor3 = 'OutlineColor';
         });
+        local SearchHeight = Dropdown.Searchable and 22 or 0;
+        local SearchBox;
+        if Dropdown.Searchable then
+            SearchBox = Library:Create('TextBox', {
+                BackgroundColor3 = Library.BackgroundColor;
+                BorderColor3 = Library.OutlineColor;
+                BorderMode = Enum.BorderMode.Inset;
+                ClearTextOnFocus = false;
+                Font = Library.Font;
+                PlaceholderText = Info.SearchPlaceholder or 'Search...';
+                PlaceholderColor3 = Color3.fromRGB(150, 150, 150);
+                Position = UDim2.fromOffset(2, 2);
+                Size = UDim2.new(1, -4, 0, 18);
+                Text = '';
+                TextColor3 = Library.FontColor;
+                TextSize = Library.FontSize;
+                TextXAlignment = Enum.TextXAlignment.Left;
+                ZIndex = 24;
+                Parent = ListInner;
+            });
+            Library:AddToRegistry(SearchBox, {
+                BackgroundColor3 = 'BackgroundColor';
+                BorderColor3 = 'OutlineColor';
+                TextColor3 = 'FontColor';
+            });
+            Dropdown.SearchBox = SearchBox;
+        end;
         local Scrolling = Library:Create('ScrollingFrame', {
             BackgroundTransparency = 1;
             BorderSizePixel = 0;
             CanvasSize = UDim2.new(0, 0, 0, 0);
-            Size = UDim2.new(1, 0, 1, 0);
+            Position = UDim2.fromOffset(0, SearchHeight);
+            Size = UDim2.new(1, 0, 1, -SearchHeight);
             ZIndex = 21;
             Parent = ListInner;
 
@@ -3333,6 +3363,7 @@ do
         function Dropdown:BuildDropdownList()
             local Values = Dropdown.Values;
             local Buttons = {};
+            local Query = string.lower(Dropdown.SearchQuery or '');
 
             for _, Element in next, Scrolling:GetChildren() do
                 if not Element:IsA('UIListLayout') then
@@ -3343,6 +3374,9 @@ do
             local Count = 0;
 
             for Idx, Value in next, Values do
+                if Query ~= '' and not string.find(string.lower(tostring(Value)), Query, 1, true) then
+                    continue;
+                end;
                 local Table = {};
                 Count = Count + 1;
 
@@ -3438,8 +3472,15 @@ do
             end;
             Scrolling.CanvasSize = UDim2.fromOffset(0, (Count * 20) + 1);
 
-            local Y = math.clamp(Count * 20, 0, MAX_DROPDOWN_ITEMS * 20) + 1;
+            local Y = SearchHeight + math.clamp(Count * 20, 0, MAX_DROPDOWN_ITEMS * 20) + 1;
             RecalculateListSize(Y);
+        end;
+
+        if SearchBox then
+            Library:GiveSignal(SearchBox:GetPropertyChangedSignal('Text'):Connect(function()
+                Dropdown.SearchQuery = SearchBox.Text;
+                Dropdown:BuildDropdownList();
+            end));
         end;
 
         function Dropdown:SetValues(NewValues)
@@ -3460,6 +3501,7 @@ do
             ListOuter.Visible = false;
             Library.OpenedFrames[ListOuter] = nil;
             DropdownArrow.Rotation = 0;
+            if SearchBox and SearchBox.Text ~= '' then SearchBox.Text = '' end;
         end;
 
         function Dropdown:OnChanged(Func)
@@ -3561,6 +3603,11 @@ do
         end;
 
         return Dropdown;
+    end;
+    function Funcs:AddSearchableDropdown(Idx, Info)
+        Info = Info or {};
+        Info.Searchable = true;
+        return self:AddDropdown(Idx, Info);
     end;
     function Funcs:AddDependencyBox()
         local Depbox = {
