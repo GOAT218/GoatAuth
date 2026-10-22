@@ -563,17 +563,6 @@ function Library:SetFontSize(Size)
             end
         end
     end
-    local mobileUI = CoreGui:FindFirstChild("LinoriaMobileUI")
-    if mobileUI then
-        for _, descendant in pairs(mobileUI:GetDescendants()) do
-            if descendant:IsA("TextLabel") or descendant:IsA("TextBox") or descendant:IsA("TextButton") then
-                local offset = descendant:GetAttribute("FontSizeOffset")
-                if offset then
-                    descendant.TextSize = Size + offset
-                end
-            end
-        end
-    end
 end
 
 local RainbowStep = 0
