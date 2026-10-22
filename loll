@@ -6064,6 +6064,12 @@ function Library:CreateWindow(...)
 			end
 		end)
 	end
+	local function RegisterMobileSidebarTouch(Input)
+		if not Library.IsMobile or Input.UserInputType ~= Enum.UserInputType.Touch then return end
+		ActiveSidebarTouches[Input] = true
+		MobileSidebarActivityToken += 1
+		if not Window.SidebarExpanded then SetSidebarExpanded(true, false) end
+	end
 	SidebarOuter.MouseEnter:Connect(function()
 		if not Library.IsMobile then SetSidebarExpanded(true, false) end
 	end)
@@ -6071,10 +6077,7 @@ function Library:CreateWindow(...)
 		if not Library.IsMobile then SetSidebarExpanded(false, false) end
 	end)
 	Library:GiveSignal(SidebarOuter.InputBegan:Connect(function(Input)
-		if Library.IsMobile and Input.UserInputType == Enum.UserInputType.Touch then
-			ActiveSidebarTouches[Input] = true
-			MobileSidebarActivityToken += 1
-		end
+		RegisterMobileSidebarTouch(Input)
 	end))
 	Library:GiveSignal(InputService.InputEnded:Connect(function(Input)
 		if ActiveSidebarTouches[Input] then
@@ -6084,9 +6087,7 @@ function Library:CreateWindow(...)
 	end))
 	SidebarLogo.Active = true
 	Library:GiveSignal(SidebarLogo.InputBegan:Connect(function(Input)
-		if Input.UserInputType == Enum.UserInputType.Touch then
-			SetSidebarExpanded(not Window.SidebarExpanded, false)
-		end
+		RegisterMobileSidebarTouch(Input)
 	end))
 	Window:SetTabLayout('Expandable Sidebar')
 
@@ -6551,6 +6552,7 @@ function Library:CreateWindow(...)
 
         TabButton.InputBegan:Connect(function(Input)
             if (Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch) then
+				RegisterMobileSidebarTouch(Input)
                 Tab:ShowTab();
             end;
         end);
