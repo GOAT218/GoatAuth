@@ -501,6 +501,7 @@ local ThemeManager = {} do
 		local Window = Library.Window
 		local UIGroup = tab:AddRightGroupbox('UI')
 		local LANGUAGE_FILE = self.Folder .. '/ui-language.txt'
+		local LAYOUT_FILE = self.Folder .. '/ui-layout.txt'
 		local LANGUAGE_CHOICES = {
 			'🇺🇸 English',
 			'🇪🇸 Español',
@@ -549,14 +550,24 @@ local ThemeManager = {} do
 				if writefile then pcall(writefile, LANGUAGE_FILE, value) end
 			end,
 		})
+		Library:SetLanguage(LANGUAGE_CODES[savedLanguage] or 'en')
+		local savedLayout = 'Top Tabs'
+		if isfile and readfile and isfile(LAYOUT_FILE) then
+			local loadedLayout = readfile(LAYOUT_FILE)
+			if loadedLayout == 'Top Tabs' or loadedLayout == 'Expandable Sidebar' then
+				savedLayout = loadedLayout
+			end
+		end
 		UIGroup:AddDropdown('NavigationLayout', {
 			Text = 'Tab position',
 			Values = { 'Top Tabs', 'Expandable Sidebar' },
-			Default = 'Expandable Sidebar',
+			Default = savedLayout,
 			Callback = function(value)
 				Window:SetTabLayout(value)
+				if writefile then pcall(writefile, LAYOUT_FILE, value) end
 			end,
 		})
+		Window:SetTabLayout(savedLayout)
 		UIGroup:AddSlider('SidebarAnimationSpeed', {
 			Text = 'Sidebar animation speed',
 			Default = 60,
