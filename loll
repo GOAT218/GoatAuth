@@ -5313,7 +5313,7 @@ function Library:CreateWindow(...)
         Parent = ShadowHolder;
     });
     local function SyncShadow()
-		local Offset = Window.TabLayout == 'Expandable Sidebar' and 0 or 8
+		local Offset = 0
         ShadowHolder.Position = UDim2.new(Outer.Position.X.Scale, Outer.Position.X.Offset + Offset, Outer.Position.Y.Scale, Outer.Position.Y.Offset + Offset);
         ShadowHolder.Size = Outer.Size;
         ShadowHolder.AnchorPoint = Outer.AnchorPoint;
