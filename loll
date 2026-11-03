@@ -5871,6 +5871,31 @@ function Library:CreateWindow(...)
 	local SidebarTween
 	local WindowLayoutBase
 	local TopLayoutAppearance
+	local ShadowImages = { ShadowImage, ShadowImageOuter, ShadowImageFar }
+	local BaseShadowAppearance = {}
+	for _, Image in ipairs(ShadowImages) do
+		BaseShadowAppearance[Image] = {
+			Size = Image.Size;
+			Color = Image.ImageColor3;
+			Transparency = Image.ImageTransparency;
+		}
+	end
+	local function SetTopTabsGlow(Enabled)
+		for Index, Image in ipairs(ShadowImages) do
+			if Enabled then
+				Image.Size = UDim2.new(1, 24 + Index * 16, 1, 24 + Index * 16)
+				Image.ImageColor3 = Library.AccentColor
+				Image.ImageTransparency = ({ 0.22, 0.58, 0.86 })[Index]
+				Library:AddToRegistry(Image, { ImageColor3 = 'AccentColor' })
+			else
+				local Saved = BaseShadowAppearance[Image]
+				Library:RemoveFromRegistry(Image)
+				Image.Size = Saved.Size
+				Image.ImageColor3 = Saved.Color
+				Image.ImageTransparency = Saved.Transparency
+			end
+		end
+	end
 	local function SetNavigationWindowExtension(Extension)
 		if not WindowLayoutBase then return end
 		Outer.Size = UDim2.new(WindowLayoutBase.Size.X.Scale, WindowLayoutBase.Size.X.Offset + Extension, WindowLayoutBase.Size.Y.Scale, WindowLayoutBase.Size.Y.Offset)
@@ -5964,28 +5989,14 @@ function Library:CreateWindow(...)
 		Window.TabLayout = Layout
 		local SidebarMode = Layout == 'Expandable Sidebar'
 		if EnteringSidebar then
-			TopLayoutAppearance = { Size = Outer.Size, Shadows = {} }
-			for _, Image in ipairs({ ShadowImage, ShadowImageOuter, ShadowImageFar }) do
-				table.insert(TopLayoutAppearance.Shadows, { Image = Image, Size = Image.Size, Color = Image.ImageColor3, Transparency = Image.ImageTransparency })
-			end
+			TopLayoutAppearance = { Size = Outer.Size }
 			local Viewport = workspace.CurrentCamera.ViewportSize
 			Outer.Size = UDim2.fromOffset(math.min(620, Viewport.X - 24), math.min(600, Viewport.Y - 60))
-			for Index, Image in ipairs({ ShadowImage, ShadowImageOuter, ShadowImageFar }) do
-				Image.Size = UDim2.new(1, 24 + Index * 16, 1, 24 + Index * 16)
-				Image.ImageColor3 = Library.AccentColor
-				Image.ImageTransparency = ({ 0.22, 0.58, 0.86 })[Index]
-				Library:AddToRegistry(Image, { ImageColor3 = 'AccentColor' })
-			end
 		elseif LeavingSidebar and TopLayoutAppearance then
 			Outer.Size = TopLayoutAppearance.Size
-			for _, Saved in ipairs(TopLayoutAppearance.Shadows) do
-				Library:RemoveFromRegistry(Saved.Image)
-				Saved.Image.Size = Saved.Size
-				Saved.Image.ImageColor3 = Saved.Color
-				Saved.Image.ImageTransparency = Saved.Transparency
-			end
 			TopLayoutAppearance = nil
 		end
+		SetTopTabsGlow(not SidebarMode)
 		SyncShadow()
 		TabBarOuter.Visible = not SidebarMode
 		SidebarOuter.Visible = SidebarMode
@@ -6089,7 +6100,7 @@ function Library:CreateWindow(...)
 	Library:GiveSignal(SidebarLogo.InputBegan:Connect(function(Input)
 		RegisterMobileSidebarTouch(Input)
 	end))
-	Window:SetTabLayout('Expandable Sidebar')
+	Window:SetTabLayout('Top Tabs')
 
     function Window:AddTab(Name)
 		Window._NavigationTabCount = (Window._NavigationTabCount or 0) + 1
