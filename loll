@@ -5876,24 +5876,19 @@ function Library:CreateWindow(...)
 	for _, Image in ipairs(ShadowImages) do
 		BaseShadowAppearance[Image] = {
 			Size = Image.Size;
+			Position = Image.Position;
 			Color = Image.ImageColor3;
 			Transparency = Image.ImageTransparency;
 		}
 	end
-	local function SetTopTabsGlow(Enabled)
+	local function SetLayoutGlow(TopTabsMode)
 		for Index, Image in ipairs(ShadowImages) do
-			if Enabled then
-				Image.Size = UDim2.new(1, 24 + Index * 16, 1, 24 + Index * 16)
-				Image.ImageColor3 = Library.AccentColor
-				Image.ImageTransparency = ({ 0.22, 0.58, 0.86 })[Index]
-				Library:AddToRegistry(Image, { ImageColor3 = 'AccentColor' })
-			else
-				local Saved = BaseShadowAppearance[Image]
-				Library:RemoveFromRegistry(Image)
-				Image.Size = Saved.Size
-				Image.ImageColor3 = Saved.Color
-				Image.ImageTransparency = Saved.Transparency
-			end
+			local Saved = BaseShadowAppearance[Image]
+			Image.Size = UDim2.new(1, 24 + Index * 16, 1, 24 + Index * 16)
+			Image.Position = TopTabsMode and UDim2.new(0.5, -4, 0.5, -4) or Saved.Position
+			Image.ImageColor3 = Library.AccentColor
+			Image.ImageTransparency = ({ 0.22, 0.58, 0.86 })[Index]
+			Library:AddToRegistry(Image, { ImageColor3 = 'AccentColor' })
 		end
 	end
 	local function SetNavigationWindowExtension(Extension)
@@ -5996,7 +5991,7 @@ function Library:CreateWindow(...)
 			Outer.Size = TopLayoutAppearance.Size
 			TopLayoutAppearance = nil
 		end
-		SetTopTabsGlow(not SidebarMode)
+		SetLayoutGlow(not SidebarMode)
 		SyncShadow()
 		TabBarOuter.Visible = not SidebarMode
 		SidebarOuter.Visible = SidebarMode
