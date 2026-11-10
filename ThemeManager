@@ -501,6 +501,7 @@ local ThemeManager = {} do
 		local Window = Library.Window
 		local UIGroup = tab:AddRightGroupbox('UI')
 		local LANGUAGE_FILE = self.Folder .. '/ui-language.txt'
+		local FIRST_RUN_FILE = self.Folder .. '/ui-language-onboarded.txt'
 		local LAYOUT_FILE = self.Folder .. '/ui-layout-v2.txt'
 		local LANGUAGE_CHOICES = {
 			'🇺🇸 English',
@@ -537,9 +538,13 @@ local ThemeManager = {} do
 			['🇮🇹 Italiano'] = 'it',
 		}
 		local savedLanguage = LANGUAGE_CHOICES[1]
+		local hasSavedLanguage = false
 		if isfile and readfile and isfile(LANGUAGE_FILE) then
-			local loadedLanguage = readfile(LANGUAGE_FILE)
-			if LANGUAGE_CODES[loadedLanguage] then savedLanguage = loadedLanguage end
+			local success, loadedLanguage = pcall(readfile, LANGUAGE_FILE)
+			if success and LANGUAGE_CODES[loadedLanguage] then
+				savedLanguage = loadedLanguage
+				hasSavedLanguage = true
+			end
 		end
 		UIGroup:AddDropdown('UILanguage', {
 			Text = 'Interface language',
@@ -551,6 +556,148 @@ local ThemeManager = {} do
 			end,
 		})
 		Library:SetLanguage(LANGUAGE_CODES[savedLanguage] or 'en')
+		if not hasSavedLanguage and not (isfile and isfile(FIRST_RUN_FILE)) then
+			local ViewportSize = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize or Vector2.new(1280, 720)
+			local Columns = ViewportSize.X < 520 and 2 or 4
+			local GridRows = math.ceil(#LANGUAGE_CHOICES / Columns)
+			local GridHeight = GridRows * 40 + (GridRows - 1) * 8
+			local PanelWidth = math.min(468, ViewportSize.X - 24)
+			local PanelHeight = 104 + GridHeight + 20
+			local Overlay = Library:Create('Frame', {
+				Name = 'FirstRunLanguagePickerOverlay';
+				Active = true;
+				BackgroundColor3 = Color3.new(0, 0, 0);
+				BackgroundTransparency = 0.38;
+				BorderSizePixel = 0;
+				Size = UDim2.fromScale(1, 1);
+				ZIndex = 800;
+				Parent = Library.ScreenGui;
+			})
+			local Panel = Library:Create('Frame', {
+				Name = 'FirstRunLanguagePicker';
+				AnchorPoint = Vector2.new(0.5, 0.5);
+				BackgroundColor3 = Library.BackgroundColor;
+				BorderColor3 = Library.OutlineColor;
+				Position = UDim2.fromScale(0.5, 0.5);
+				Size = UDim2.fromOffset(PanelWidth, PanelHeight);
+				ZIndex = 801;
+				Parent = Overlay;
+			})
+			Library:AddToRegistry(Panel, { BackgroundColor3 = 'BackgroundColor'; BorderColor3 = 'OutlineColor' })
+			Library:Create('UICorner', { CornerRadius = UDim.new(0, 10); Parent = Panel })
+			local PanelStroke = Library:Create('UIStroke', {
+				Color = Library.AccentColor;
+				Transparency = 0.35;
+				Thickness = 1;
+				Parent = Panel;
+			})
+			Library:AddToRegistry(PanelStroke, { Color = 'AccentColor' })
+			local Title = Library:CreateLabel({
+				Name = 'Title';
+				Position = UDim2.fromOffset(20, 18);
+				Size = UDim2.new(1, -40, 0, 28);
+				Font = Enum.Font.GothamBold;
+				Text = 'Choose your language';
+				TextColor3 = Library.FontColor;
+				TextSize = 20;
+				TextXAlignment = Enum.TextXAlignment.Left;
+				ZIndex = 802;
+				Parent = Panel;
+			})
+			local Subtitle = Library:CreateLabel({
+				Name = 'Subtitle';
+				Position = UDim2.fromOffset(20, 49);
+				Size = UDim2.new(1, -40, 0, 20);
+				Font = Enum.Font.Gotham;
+				Text = 'Select the language for this interface';
+				TextColor3 = Library.DisabledTextColor;
+				TextSize = 13;
+				TextXAlignment = Enum.TextXAlignment.Left;
+				ZIndex = 802;
+				Parent = Panel;
+			})
+			Library:AddToRegistry(Title, { TextColor3 = 'FontColor' })
+			Library:AddToRegistry(Subtitle, { TextColor3 = 'DisabledTextColor' })
+			local Grid = Library:Create('Frame', {
+				Name = 'LanguageGrid';
+				BackgroundTransparency = 1;
+				Position = UDim2.fromOffset(20, 84);
+				Size = UDim2.new(1, -40, 0, GridHeight);
+				ZIndex = 802;
+				Parent = Panel;
+			})
+			Library:Create('UIGridLayout', {
+				CellPadding = UDim2.fromOffset(8, 8);
+				CellSize = UDim2.new(1 / Columns, -(8 * (Columns - 1) / Columns), 0, 40);
+				FillDirectionMaxCells = Columns;
+				SortOrder = Enum.SortOrder.LayoutOrder;
+				Parent = Grid;
+			})
+			local SHORT_LANGUAGE_NAMES = {
+				['🇺🇸 English'] = '🇺🇸 English',
+				['🇪🇸 Español'] = '🇪🇸 Español',
+				['🇧🇷 Português (Brasil)'] = '🇧🇷 Português',
+				['🇨🇳 简体中文'] = '🇨🇳 简体中文',
+				['🇹🇼 繁體中文'] = '🇹🇼 繁體中文',
+				['🇫🇷 Français'] = '🇫🇷 Français',
+				['🇩🇪 Deutsch'] = '🇩🇪 Deutsch',
+				['🇷🇺 Русский'] = '🇷🇺 Русский',
+				['🇯🇵 日本語'] = '🇯🇵 日本語',
+				['🇰🇷 한국어'] = '🇰🇷 한국어',
+				['🇸🇦 العربية'] = '🇸🇦 العربية',
+				['🇮🇳 हिन्दी'] = '🇮🇳 हिन्दी',
+				['🇹🇷 Türkçe'] = '🇹🇷 Türkçe',
+				['🇮🇩 Bahasa Indonesia'] = '🇮🇩 Bahasa',
+				['🇮🇹 Italiano'] = '🇮🇹 Italiano',
+			}
+			for Index, Choice in ipairs(LANGUAGE_CHOICES) do
+				local Button = Library:Create('TextButton', {
+					Name = 'LanguageChoice' .. Index;
+					AutoButtonColor = false;
+					BackgroundColor3 = Library.MainColor;
+					BorderColor3 = Library.OutlineColor;
+					Font = Enum.Font.GothamMedium;
+					LayoutOrder = Index;
+					Text = SHORT_LANGUAGE_NAMES[Choice] or Choice;
+					TextColor3 = Library.FontColor;
+					TextSize = 12;
+					TextTruncate = Enum.TextTruncate.AtEnd;
+					ZIndex = 803;
+					Parent = Grid;
+				})
+				Library:AddToRegistry(Button, {
+					BackgroundColor3 = 'MainColor';
+					BorderColor3 = 'OutlineColor';
+					TextColor3 = 'FontColor';
+				})
+				Library:Create('UICorner', { CornerRadius = UDim.new(0, 6); Parent = Button })
+				local Stroke = Library:Create('UIStroke', {
+					Color = Library.AccentColor;
+					Transparency = 1;
+					Thickness = 1.5;
+					Parent = Button;
+				})
+				Library:AddToRegistry(Stroke, { Color = 'AccentColor' })
+				Button.MouseEnter:Connect(function()
+					if Stroke.Transparency ~= 0 then Button.BackgroundColor3 = Library.GetBetterColor(Library, Library.MainColor, 5) end
+				end)
+				Button.MouseLeave:Connect(function()
+					Button.BackgroundColor3 = Library.MainColor
+				end)
+				Library:GiveSignal(Button.Activated:Connect(function()
+					local LanguageOption = Library.Options and Library.Options.UILanguage
+					if LanguageOption then LanguageOption:SetValue(Choice) end
+					if writefile then pcall(writefile, FIRST_RUN_FILE, '1') end
+					Library.ModalElement.Modal = false
+					for _, Instance in ipairs(Overlay:GetDescendants()) do
+						Library:RemoveFromRegistry(Instance)
+					end
+					Library:RemoveFromRegistry(Overlay)
+					Overlay:Destroy()
+				end))
+			end
+			Library.ModalElement.Modal = true
+		end
 		local savedLayout = 'Top Tabs'
 		if isfile and readfile and isfile(LAYOUT_FILE) then
 			local loadedLayout = readfile(LAYOUT_FILE)
