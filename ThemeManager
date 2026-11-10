@@ -679,10 +679,12 @@ local ThemeManager = {} do
 				})
 				Library:AddToRegistry(Stroke, { Color = 'AccentColor' })
 				Button.MouseEnter:Connect(function()
-					if Stroke.Transparency ~= 0 then Button.BackgroundColor3 = Library.GetBetterColor(Library, Library.MainColor, 5) end
+					Button.BackgroundColor3 = Library.GetBetterColor(Library, Library.MainColor, 5)
+					Stroke.Transparency = 0.3
 				end)
 				Button.MouseLeave:Connect(function()
 					Button.BackgroundColor3 = Library.MainColor
+					Stroke.Transparency = 1
 				end)
 				Library:GiveSignal(Button.Activated:Connect(function()
 					local LanguageOption = Library.Options and Library.Options.UILanguage
