@@ -66,6 +66,10 @@ local ThemeManager = {} do
 
 	function ThemeManager:SetLibrary(library)
 		self.Library = library
+		if library and type(library.SettingsFolder) == 'string' then
+			self.Folder = library.SettingsFolder
+			self:BuildFolderTree()
+		end
 	end
 
 	function ThemeManager:SetHalloweenDecorations(enabled)
@@ -755,7 +759,6 @@ local ThemeManager = {} do
 		self:CreateThemeManager(groupbox)
 	end
 
-	ThemeManager:BuildFolderTree()
 end
 
 return ThemeManager
