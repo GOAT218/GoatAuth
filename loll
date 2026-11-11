@@ -311,10 +311,30 @@ local function BuildGameSettingsFolder()
 	GameName = GameName:gsub('[^%w _%-]', ''):gsub('%s+', '_'):gsub('_+', '_'):sub(1, 48)
 	if GameName == '' then GameName = 'Place' end
 	local UniqueId = PlaceId > 0 and tostring(PlaceId) or tostring(game.GameId)
-	return 'GoatHub/' .. GameName .. '_' .. UniqueId .. '_v2'
+	return 'GoatHub/' .. GameName .. '_' .. UniqueId .. '_v3'
 end
 
 Library.SettingsFolder = BuildGameSettingsFolder()
+
+local function RemoveSettingsFolder(Path)
+	if not isfolder or not listfiles then return end
+	local Success, Entries = pcall(listfiles, Path)
+	if not Success or typeof(Entries) ~= 'table' then return end
+	for _, Entry in ipairs(Entries) do
+		local EntryPath = tostring(Entry):gsub('\\', '/')
+		if isfolder(EntryPath) then
+			RemoveSettingsFolder(EntryPath)
+			if delfolder then pcall(delfolder, EntryPath) end
+		elseif delfile then
+			pcall(delfile, EntryPath)
+		end
+	end
+	if delfolder then pcall(delfolder, Path) end
+end
+
+local PreviousFolder = Library.SettingsFolder:gsub('_v3$', '')
+RemoveSettingsFolder(PreviousFolder)
+RemoveSettingsFolder(PreviousFolder .. '_v2')
 
 local SupportedLanguages = {
 	en = true,
