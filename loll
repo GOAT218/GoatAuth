@@ -311,7 +311,7 @@ local function BuildGameSettingsFolder()
 	GameName = GameName:gsub('[^%w _%-]', ''):gsub('%s+', '_'):gsub('_+', '_'):sub(1, 48)
 	if GameName == '' then GameName = 'Place' end
 	local UniqueId = PlaceId > 0 and tostring(PlaceId) or tostring(game.GameId)
-	return 'GoatHub/' .. GameName .. '_' .. UniqueId
+	return 'GoatHub/' .. GameName .. '_' .. UniqueId .. '_v2'
 end
 
 Library.SettingsFolder = BuildGameSettingsFolder()
