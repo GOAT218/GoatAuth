@@ -305,6 +305,17 @@ local Library = {
 Library.PremiumUnlocked = false
 Library.PremiumControls = {}
 
+local function DetectLuaProtPremiumKey()
+	local Success, Premium = pcall(function()
+		return LP_PREMIUM
+	end)
+	if Success and type(Premium) == 'boolean' then
+		return Premium
+	end
+	local EnvironmentSuccess, Environment = pcall(getgenv)
+	return EnvironmentSuccess and type(Environment) == 'table' and Environment.LP_PREMIUM == true
+end
+
 function Library:SetPremiumAccess(Unlocked)
 	Unlocked = Unlocked == true
 	if self.PremiumUnlocked and not Unlocked then
@@ -320,6 +331,8 @@ function Library:SetPremiumAccess(Unlocked)
 	end
 	self.PremiumUnlocked = Unlocked
 end
+
+Library:SetPremiumAccess(DetectLuaProtPremiumKey())
 
 function Library:SetPremiumPurchaseURL(Url)
 	self.PremiumPurchaseURL = type(Url) == 'string' and Url or nil
