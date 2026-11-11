@@ -302,6 +302,20 @@ local Library = {
     ImageManager = CustomImageManager;
 };
 
+local function BuildGameSettingsFolder()
+	local PlaceId = tonumber(game.PlaceId) or 0
+	local GameName = tostring(game.Name or '')
+	if GameName == '' or GameName == 'Game' then
+		GameName = 'Place'
+	end
+	GameName = GameName:gsub('[^%w _%-]', ''):gsub('%s+', '_'):gsub('_+', '_'):sub(1, 48)
+	if GameName == '' then GameName = 'Place' end
+	local UniqueId = PlaceId > 0 and tostring(PlaceId) or tostring(game.GameId)
+	return 'GoatHub/' .. GameName .. '_' .. UniqueId
+end
+
+Library.SettingsFolder = BuildGameSettingsFolder()
+
 local SupportedLanguages = {
 	en = true,
 	es = true,
@@ -332,7 +346,7 @@ end
 function Library:_LoadTranslationCache(Language)
 	if self.TranslationCache[Language] then return self.TranslationCache[Language] end
 	local Cache = {}
-	local Path = 'LinoriaLibSettings/translations-' .. Language .. '.json'
+	local Path = self.SettingsFolder .. '/translations-' .. Language .. '.json'
 	if isfile and readfile and isfile(Path) then
 		pcall(function()
 			local Loaded = HttpService:JSONDecode(readfile(Path))
@@ -348,10 +362,14 @@ function Library:_SaveTranslationCache(Language)
 	local Cache = self.TranslationCache[Language]
 	if not Cache then return end
 	pcall(function()
-		if makefolder and isfolder and not isfolder('LinoriaLibSettings') then
-			makefolder('LinoriaLibSettings')
+		if makefolder and isfolder then
+			local CurrentPath = ''
+			for Part in self.SettingsFolder:gmatch('[^/]+') do
+				CurrentPath = CurrentPath == '' and Part or (CurrentPath .. '/' .. Part)
+				if not isfolder(CurrentPath) then makefolder(CurrentPath) end
+			end
 		end
-		writefile('LinoriaLibSettings/translations-' .. Language .. '.json', HttpService:JSONEncode(Cache))
+		writefile(self.SettingsFolder .. '/translations-' .. Language .. '.json', HttpService:JSONEncode(Cache))
 	end)
 end
 
