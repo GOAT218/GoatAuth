@@ -302,6 +302,124 @@ local Library = {
     ImageManager = CustomImageManager;
 };
 
+Library.PremiumUnlocked = false
+Library.PremiumControls = {}
+
+function Library:SetPremiumAccess(Unlocked)
+	Unlocked = Unlocked == true
+	if self.PremiumUnlocked and not Unlocked then
+		for _, Control in ipairs(self.PremiumControls) do
+			if Control.Type == 'Toggle' and Control.Value then
+				Control.Value = false
+				if Control.Display then Control:Display() end
+				self:SafeCallback(Control.Callback, false)
+				self:SafeCallback(Control.Changed, false)
+			end
+		end
+		self:UpdateDependencyBoxes()
+	end
+	self.PremiumUnlocked = Unlocked
+end
+
+function Library:SetPremiumPurchaseURL(Url)
+	self.PremiumPurchaseURL = type(Url) == 'string' and Url or nil
+end
+
+function Library:ShowPremiumPrompt(FeatureName)
+	if self.PremiumPrompt then
+		self.PremiumPrompt.Visible = true
+		return
+	end
+	local Overlay = self:Create('Frame', {
+		Name = 'PremiumPromptOverlay';
+		Active = true;
+		BackgroundColor3 = Color3.new(0, 0, 0);
+		BackgroundTransparency = 0.38;
+		BorderSizePixel = 0;
+		Size = UDim2.fromScale(1, 1);
+		ZIndex = 950;
+		Parent = self.ScreenGui;
+	})
+	local Panel = self:Create('Frame', {
+		Name = 'PremiumPrompt';
+		AnchorPoint = Vector2.new(0.5, 0.5);
+		BackgroundColor3 = self.BackgroundColor;
+		BorderColor3 = self.OutlineColor;
+		Position = UDim2.fromScale(0.5, 0.5);
+		Size = UDim2.fromOffset(330, 172);
+		ZIndex = 951;
+		Parent = Overlay;
+	})
+	self:AddToRegistry(Panel, { BackgroundColor3 = 'BackgroundColor'; BorderColor3 = 'OutlineColor' })
+	self:Create('UICorner', { CornerRadius = UDim.new(0, 10); Parent = Panel })
+	local Stroke = self:Create('UIStroke', { Color = self.AccentColor; Transparency = 0.3; Thickness = 1; Parent = Panel })
+	self:AddToRegistry(Stroke, { Color = 'AccentColor' })
+	local Title = self:CreateLabel({
+		Position = UDim2.fromOffset(20, 18); Size = UDim2.new(1, -40, 0, 28);
+		Font = Enum.Font.GothamBold; Text = 'Get premium now'; TextColor3 = self.FontColor;
+		TextSize = 19; TextXAlignment = Enum.TextXAlignment.Left; ZIndex = 952; Parent = Panel;
+	})
+	local Message = self:CreateLabel({
+		Position = UDim2.fromOffset(20, 55); Size = UDim2.new(1, -40, 0, 40);
+		Font = Enum.Font.Gotham; Text = (FeatureName or 'This feature') .. ' is premium only.';
+		TextColor3 = self.DisabledTextColor; TextSize = 14; TextWrapped = true;
+		TextXAlignment = Enum.TextXAlignment.Left; TextYAlignment = Enum.TextYAlignment.Top;
+		ZIndex = 952; Parent = Panel;
+	})
+	self:AddToRegistry(Title, { TextColor3 = 'FontColor' })
+	self:AddToRegistry(Message, { TextColor3 = 'DisabledTextColor' })
+	local function CreatePromptButton(Text, X, Callback)
+		local Button = self:Create('TextButton', {
+			AutoButtonColor = false; BackgroundColor3 = self.MainColor; BorderColor3 = self.OutlineColor;
+			Position = UDim2.fromOffset(X, 116); Size = UDim2.fromOffset(138, 34);
+			Font = Enum.Font.GothamMedium; Text = Text; TextColor3 = self.FontColor; TextSize = 13;
+			ZIndex = 952; Parent = Panel;
+		})
+		self:AddToRegistry(Button, { BackgroundColor3 = 'MainColor'; BorderColor3 = 'OutlineColor'; TextColor3 = 'FontColor' })
+		self:Create('UICorner', { CornerRadius = UDim.new(0, 6); Parent = Button })
+		self:GiveSignal(Button.Activated:Connect(Callback))
+		return Button
+	end
+	CreatePromptButton('Get premium', 20, function()
+		if self.PremiumPurchaseURL and setclipboard then
+			pcall(setclipboard, self.PremiumPurchaseURL)
+			self:Notify('Premium link copied', 3)
+		else
+			self:Notify('Premium purchase link is not configured yet', 3)
+		end
+	end)
+	CreatePromptButton('Close', 172, function()
+		self.ModalElement.Modal = false
+		Overlay:Destroy()
+		self.PremiumPrompt = nil
+	end)
+	self.PremiumPrompt = Overlay
+	self.ModalElement.Modal = true
+end
+
+function Library:CanUsePremium(Control)
+	if not Control.Premium or self.PremiumUnlocked then return true end
+	self:ShowPremiumPrompt(Control.PremiumName)
+	return false
+end
+
+function Library:MarkPremium(Control, FeatureName)
+	assert(type(Control) == 'table', 'MarkPremium expects a control object')
+	Control.Premium = true
+	Control.PremiumName = FeatureName or Control.PremiumName or 'This feature'
+	if Control.PremiumLabel and not Control._PremiumBadgeApplied then
+		Control._PremiumBaseLabel = Control.PremiumLabel.Text
+		Control.PremiumLabel.Text = Control._PremiumBaseLabel .. '  [PREMIUM]'
+		Control._PremiumBadgeApplied = true
+	end
+	if Control.PremiumLabel then Control.PremiumLabel.TextTruncate = Enum.TextTruncate.AtEnd end
+	if not Control._PremiumRegistered then
+		Control._PremiumRegistered = true
+		table.insert(self.PremiumControls, Control)
+	end
+	return Control
+end
+
 local function BuildGameSettingsFolder()
 	local PlaceId = tonumber(game.PlaceId) or 0
 	local GameName = tostring(game.Name or '')
@@ -2860,11 +2978,14 @@ do
         local Toggle = {
             Value = Info.Default or false;
             Type = 'Toggle';
+            Premium = Info.Premium == true;
+            PremiumName = Info.PremiumName or Info.Text;
 
             Callback = Info.Callback or function(Value) end;
             Addons = {},
             Risky = Info.Risky,
         };
+        if Toggle.Premium and not Library.PremiumUnlocked then Toggle.Value = false end
         local Groupbox = self;
         local Container = Groupbox.Container;
 
@@ -2937,6 +3058,7 @@ do
         end;
 
         function Toggle:SetValue(Bool)
+            if not Library:CanUsePremium(Toggle) then return false end
             Bool = (not not Bool);
             Toggle.Value = Bool;
             Toggle:Display();
@@ -2980,8 +3102,11 @@ do
         Groupbox:Resize();
 
         Toggle.TextLabel = ToggleLabel;
+        Toggle.PremiumLabel = ToggleLabel;
         Toggle.Container = Container;
         setmetatable(Toggle, BaseAddons);
+
+        if Toggle.Premium then Library:MarkPremium(Toggle, Toggle.PremiumName) end
 
         Toggles[Idx] = Toggle;
 
@@ -3001,6 +3126,7 @@ do
         assert(Info.Min, 'AddSlider: Missing minimum value.');
         assert(Info.Max, 'AddSlider: Missing maximum value.');
         assert(Info.Rounding, 'AddSlider: Missing rounding value.');
+        if Info.Premium and Info.Text then Info.Text = Info.Text .. '  [PREMIUM]' end
         local Slider = {
             Value = Info.Default;
             Min = Info.Min;
@@ -3008,6 +3134,8 @@ do
             Rounding = Info.Rounding;
             MaxSize = 232;
             Type = 'Slider';
+            Premium = Info.Premium == true;
+            PremiumName = Info.PremiumName or Info.Text;
             Callback = Info.Callback or function(Value) end;
         };
 
@@ -3109,6 +3237,7 @@ do
             return Round(Library:MapValue(X, 0, Slider.MaxSize, Slider.Min, Slider.Max));
         end;
         function Slider:SetValue(Str)
+            if not Library:CanUsePremium(Slider) then return false end
             local Num = tonumber(Str);
             if (not Num) then
                 return;
@@ -3124,6 +3253,7 @@ do
         end;
         SliderInner.InputBegan:Connect(function(Input)
             if (Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch) and not Library:MouseIsOverOpenedFrame() then
+                if not Library:CanUsePremium(Slider) then return end
                 
                 local function UpdateSlider(PosX)
                     local gPos = Fill.AbsolutePosition.X
@@ -3187,6 +3317,11 @@ do
         assert(Info.Values, 'AddDropdown: Missing dropdown value list.');
         assert(Info.AllowNull or Info.Default, 'AddDropdown: Missing default value. Pass `AllowNull` as true if this was intentional.')
 
+        if Info.Premium then
+            Info.Text = Info.Text or Idx
+            Info.Compact = false
+        end
+
         if (not Info.Text) then
             Info.Compact = true;
         end;
@@ -3199,6 +3334,8 @@ do
             Searchable = Info.Searchable == true;
             SearchQuery = '';
             Type = 'Dropdown';
+            Premium = Info.Premium == true;
+            PremiumName = Info.PremiumName or Info.Text or Idx;
             SpecialType = Info.SpecialType;
             Callback = Info.Callback or function(Value) end;
         };
@@ -3207,8 +3344,9 @@ do
         local Container = Groupbox.Container;
 
         local RelativeOffset = 0;
+        local DropdownTitleLabel
         if not Info.Compact and not NoLabel then
-            local DropdownLabel = Library:CreateLabel({
+            DropdownTitleLabel = Library:CreateLabel({
                 Size = UDim2.new(1, 0, 0, 10);
                 TextSize = Library.FontSize;
                 Text = Info.Text;
@@ -3470,6 +3608,7 @@ do
                 end;
                 ButtonLabel.InputBegan:Connect(function(Input)
                     if (Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch) then
+                        if not Library:CanUsePremium(Dropdown) then return end
                         local Try = not Selected;
 
                         if Dropdown:GetActiveValues() == 1 and (not Try) and (not Info.AllowNull) then
@@ -3552,6 +3691,7 @@ do
         end;
 
         function Dropdown:SetValue(Val)
+            if not Library:CanUsePremium(Dropdown) then return false end
             if Dropdown.Multi then
                 local nTable = {};
                 for Value, Bool in next, Val do
@@ -3577,6 +3717,7 @@ do
 
         DropdownOuter.InputBegan:Connect(function(Input)
             if (Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch) and not Library:MouseIsOverOpenedFrame() then
+                if not Library:CanUsePremium(Dropdown) then return end
                 if ListOuter.Visible then
                     Dropdown:CloseDropdown();
                 else
@@ -3639,6 +3780,11 @@ do
         Groupbox:Resize();
 
         Options[Idx] = Dropdown;
+
+        if Dropdown.Premium then
+            Dropdown.PremiumLabel = DropdownTitleLabel
+            Library:MarkPremium(Dropdown, Dropdown.PremiumName)
+        end
 
         if Groupbox.Elements then
             table.insert(Groupbox.Elements, Dropdown);
