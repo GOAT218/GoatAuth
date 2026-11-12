@@ -421,11 +421,32 @@ function Library:MarkPremium(Control, FeatureName)
 	Control.Premium = true
 	Control.PremiumName = FeatureName or Control.PremiumName or 'This feature'
 	if Control.PremiumLabel and not Control._PremiumBadgeApplied then
-		Control._PremiumBaseLabel = Control.PremiumLabel.Text
-		Control.PremiumLabel.Text = Control._PremiumBaseLabel .. '  [PREMIUM]'
+		local Badge = self:Create('Frame', {
+			Name = 'PremiumBadge';
+			AnchorPoint = Control.PremiumBadgeLayoutManaged and Vector2.zero or Vector2.new(1, 0.5);
+			Position = Control.PremiumBadgeLayoutManaged and UDim2.new() or UDim2.new(1, -2, 0.5, 0);
+			BackgroundColor3 = Color3.fromRGB(55, 43, 21);
+			BorderColor3 = Color3.fromRGB(202, 158, 69);
+			BorderSizePixel = 1;
+			LayoutOrder = 100;
+			Size = UDim2.fromOffset(66, 14);
+			ZIndex = 10;
+			Parent = Control.PremiumLabel;
+		})
+		self:Create('UICorner', { CornerRadius = UDim.new(0, 5); Parent = Badge })
+		self:Create('TextLabel', {
+			BackgroundTransparency = 1;
+			Font = Enum.Font.GothamBold;
+			Position = UDim2.fromOffset(2, 0);
+			Size = UDim2.new(1, -4, 1, 0);
+			Text = '✦ PREMIUM';
+			TextColor3 = Color3.fromRGB(255, 211, 117);
+			TextSize = 9;
+			ZIndex = 11;
+			Parent = Badge;
+		})
 		Control._PremiumBadgeApplied = true
 	end
-	if Control.PremiumLabel then Control.PremiumLabel.TextTruncate = Enum.TextTruncate.AtEnd end
 	if not Control._PremiumRegistered then
 		Control._PremiumRegistered = true
 		table.insert(self.PremiumControls, Control)
@@ -3116,6 +3137,7 @@ do
 
         Toggle.TextLabel = ToggleLabel;
         Toggle.PremiumLabel = ToggleLabel;
+        Toggle.PremiumBadgeLayoutManaged = true;
         Toggle.Container = Container;
         setmetatable(Toggle, BaseAddons);
 
@@ -3139,7 +3161,9 @@ do
         assert(Info.Min, 'AddSlider: Missing minimum value.');
         assert(Info.Max, 'AddSlider: Missing maximum value.');
         assert(Info.Rounding, 'AddSlider: Missing rounding value.');
-        if Info.Premium and Info.Text then Info.Text = Info.Text .. '  [PREMIUM]' end
+        if Info.Premium and Info.Text then
+            Info.Text = Info.Text .. '  <font color="#FFD375"><b>✦ PREMIUM</b></font>'
+        end
         local Slider = {
             Value = Info.Default;
             Min = Info.Min;
@@ -3203,6 +3227,7 @@ do
             Size = UDim2.new(1, 0, 1, 0);
             TextSize = Library.FontSize;
             Text = 'Infinite';
+            RichText = Info.Premium == true;
             ZIndex = 9;
             Parent = SliderInner;
         });
@@ -3359,15 +3384,49 @@ do
         local RelativeOffset = 0;
         local DropdownTitleLabel
         if not Info.Compact and not NoLabel then
+            local TitleParent = Container
+            if Info.Premium then
+                TitleParent = Library:Create('Frame', {
+                    BackgroundTransparency = 1;
+                    Size = UDim2.new(1, 0, 0, 10);
+                    ZIndex = 5;
+                    Parent = Container;
+                })
+            end
             DropdownTitleLabel = Library:CreateLabel({
-                Size = UDim2.new(1, 0, 0, 10);
+                Size = Info.Premium and UDim2.new(1, -72, 1, 0) or UDim2.new(1, 0, 0, 10);
                 TextSize = Library.FontSize;
                 Text = Info.Text;
                 TextXAlignment = Enum.TextXAlignment.Left;
                 TextYAlignment = Enum.TextYAlignment.Bottom;
                 ZIndex = 5;
-                Parent = Container;
+                Parent = TitleParent;
             });
+            if Info.Premium then
+                local Badge = Library:Create('Frame', {
+                    Name = 'PremiumBadge';
+                    AnchorPoint = Vector2.new(1, 0.5);
+                    Position = UDim2.new(1, -2, 0.5, 0);
+                    BackgroundColor3 = Color3.fromRGB(55, 43, 21);
+                    BorderColor3 = Color3.fromRGB(202, 158, 69);
+                    Size = UDim2.fromOffset(66, 14);
+                    ZIndex = 10;
+                    Parent = TitleParent;
+                })
+                Library:Create('UICorner', { CornerRadius = UDim.new(0, 5); Parent = Badge })
+                Library:Create('TextLabel', {
+                    BackgroundTransparency = 1;
+                    Font = Enum.Font.GothamBold;
+                    Position = UDim2.fromOffset(2, 0);
+                    Size = UDim2.new(1, -4, 1, 0);
+                    Text = '✦ PREMIUM';
+                    TextColor3 = Color3.fromRGB(255, 211, 117);
+                    TextSize = 9;
+                    ZIndex = 11;
+                    Parent = Badge;
+                })
+                DropdownTitleLabel.TextTruncate = Enum.TextTruncate.AtEnd
+            end
             Groupbox:AddBlank(3);
         end
 
@@ -3795,8 +3854,11 @@ do
         Options[Idx] = Dropdown;
 
         if Dropdown.Premium then
-            Dropdown.PremiumLabel = DropdownTitleLabel
-            Library:MarkPremium(Dropdown, Dropdown.PremiumName)
+            Dropdown.PremiumLabel = nil
+            if not Dropdown._PremiumRegistered then
+                Dropdown._PremiumRegistered = true
+                table.insert(Library.PremiumControls, Dropdown)
+            end
         end
 
         if Groupbox.Elements then
