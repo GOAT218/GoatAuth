@@ -439,7 +439,7 @@ function Library:MarkPremium(Control, FeatureName)
 			Font = Enum.Font.GothamBold;
 			Position = UDim2.fromOffset(2, 0);
 			Size = UDim2.new(1, -4, 1, 0);
-			Text = '✦ PREMIUM';
+			Text = '$ PREMIUM';
 			TextColor3 = Color3.fromRGB(255, 211, 117);
 			TextSize = 9;
 			ZIndex = 11;
@@ -3162,7 +3162,7 @@ do
         assert(Info.Max, 'AddSlider: Missing maximum value.');
         assert(Info.Rounding, 'AddSlider: Missing rounding value.');
         if Info.Premium and Info.Text then
-            Info.Text = Info.Text .. '  <font color="#FFD375"><b>✦ PREMIUM</b></font>'
+            Info.Text = Info.Text .. '  <font color="#FFD375"><b>$ PREMIUM</b></font>'
         end
         local Slider = {
             Value = Info.Default;
@@ -3419,7 +3419,7 @@ do
                     Font = Enum.Font.GothamBold;
                     Position = UDim2.fromOffset(2, 0);
                     Size = UDim2.new(1, -4, 1, 0);
-                    Text = '✦ PREMIUM';
+                    Text = '$ PREMIUM';
                     TextColor3 = Color3.fromRGB(255, 211, 117);
                     TextSize = 9;
                     ZIndex = 11;
