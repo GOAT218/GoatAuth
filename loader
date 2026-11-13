@@ -58,9 +58,10 @@ local Theme = {
 }
 Theme.Muted = Theme.Font:Lerp(Color3.fromRGB(90, 85, 80), 0.45)
 
-local NOTICE_SECONDS = 12
-local gui, shell, statusLabel, detailFolder
+local NOTICE_SECONDS = 8
+local gui, shell, titleLabel, subLabel
 local welcomeShown = false
+local dismissToken = 0
 local cachedAuth = nil -- from checkKey
 
 local function noticeParent()
@@ -81,15 +82,6 @@ local function noticeParent()
 		return core
 	end
 	return LocalPlayer:WaitForChild("PlayerGui")
-end
-
-local function clearDetails()
-	if not detailFolder then
-		return
-	end
-	for _, child in ipairs(detailFolder:GetChildren()) do
-		child:Destroy()
-	end
 end
 
 local function ensureShell()
@@ -114,99 +106,79 @@ local function ensureShell()
 	shell = Instance.new("Frame")
 	shell.Name = "Shell"
 	shell.AnchorPoint = Vector2.new(0, 1)
-	shell.Position = UDim2.new(0, 14, 1, -14)
-	shell.Size = UDim2.fromOffset(300, 0)
-	shell.AutomaticSize = Enum.AutomaticSize.Y
+	shell.Position = UDim2.new(0, 14, 1, 40)
+	shell.Size = UDim2.fromOffset(220, 52)
 	shell.BackgroundColor3 = Theme.Bg
-	shell.BackgroundTransparency = 0.06
+	shell.BackgroundTransparency = 0.08
 	shell.BorderSizePixel = 0
 	shell.Parent = gui
-	Instance.new("UICorner", shell).CornerRadius = UDim.new(0, 6)
+	Instance.new("UICorner", shell).CornerRadius = UDim.new(0, 8)
 
 	local stroke = Instance.new("UIStroke")
 	stroke.Color = Theme.Outline
 	stroke.Thickness = 1
-	stroke.Transparency = 0.12
+	stroke.Transparency = 0.15
 	stroke.Parent = shell
 
 	local accent = Instance.new("Frame")
-	accent.Size = UDim2.new(0, 2, 1, -10)
-	accent.Position = UDim2.fromOffset(6, 5)
+	accent.Size = UDim2.new(0, 3, 1, -12)
+	accent.Position = UDim2.fromOffset(6, 6)
 	accent.BackgroundColor3 = Theme.Accent
 	accent.BorderSizePixel = 0
 	accent.Parent = shell
 	Instance.new("UICorner", accent).CornerRadius = UDim.new(1, 0)
 
-	local pad = Instance.new("UIPadding")
-	pad.PaddingTop = UDim.new(0, 10)
-	pad.PaddingBottom = UDim.new(0, 10)
-	pad.PaddingLeft = UDim.new(0, 16)
-	pad.PaddingRight = UDim.new(0, 12)
-	pad.Parent = shell
+	titleLabel = Instance.new("TextLabel")
+	titleLabel.BackgroundTransparency = 1
+	titleLabel.Position = UDim2.fromOffset(16, 8)
+	titleLabel.Size = UDim2.new(1, -24, 0, 18)
+	titleLabel.Font = Enum.Font.GothamBold
+	titleLabel.TextSize = 13
+	titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+	titleLabel.TextColor3 = Theme.Font
+	titleLabel.Text = "GOAT Hub"
+	titleLabel.Parent = shell
 
-	local layout = Instance.new("UIListLayout")
-	layout.SortOrder = Enum.SortOrder.LayoutOrder
-	layout.Padding = UDim.new(0, 6)
-	layout.Parent = shell
+	subLabel = Instance.new("TextLabel")
+	subLabel.BackgroundTransparency = 1
+	subLabel.Position = UDim2.fromOffset(16, 28)
+	subLabel.Size = UDim2.new(1, -24, 0, 14)
+	subLabel.Font = Enum.Font.Gotham
+	subLabel.TextSize = 11
+	subLabel.TextXAlignment = Enum.TextXAlignment.Left
+	subLabel.TextColor3 = Theme.Muted
+	subLabel.Text = ""
+	subLabel.Parent = shell
 
-	statusLabel = Instance.new("TextLabel")
-	statusLabel.LayoutOrder = 1
-	statusLabel.BackgroundTransparency = 1
-	statusLabel.Size = UDim2.new(1, 0, 0, 18)
-	statusLabel.Font = Enum.Font.GothamMedium
-	statusLabel.TextSize = 14
-	statusLabel.TextXAlignment = Enum.TextXAlignment.Left
-	statusLabel.TextColor3 = Theme.Font
-	statusLabel.Text = "GOAT Hub"
-	statusLabel.Parent = shell
-
-	detailFolder = Instance.new("Frame")
-	detailFolder.LayoutOrder = 2
-	detailFolder.BackgroundTransparency = 1
-	detailFolder.Size = UDim2.new(1, 0, 0, 0)
-	detailFolder.AutomaticSize = Enum.AutomaticSize.Y
-	detailFolder.Parent = shell
-
-	local detailLayout = Instance.new("UIListLayout")
-	detailLayout.SortOrder = Enum.SortOrder.LayoutOrder
-	detailLayout.Padding = UDim.new(0, 5)
-	detailLayout.Parent = detailFolder
+	TweenService:Create(shell, TweenInfo.new(0.28, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+		Position = UDim2.new(0, 14, 1, -14),
+	}):Play()
 end
 
-local function setStatus(text)
+local function scheduleDismiss()
+	dismissToken += 1
+	local token = dismissToken
+	task.delay(NOTICE_SECONDS, function()
+		if token ~= dismissToken or not (gui and gui.Parent and shell) then
+			return
+		end
+		local info = TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+		TweenService:Create(shell, info, {
+			Position = UDim2.new(0, 14, 1, 40),
+			BackgroundTransparency = 1,
+		}):Play()
+		task.wait(0.32)
+		if token == dismissToken and gui and gui.Parent then
+			gui:Destroy()
+		end
+	end)
+end
+
+local function setStatus(text, sub)
 	ensureShell()
-	clearDetails()
-	statusLabel.Text = tostring(text)
-	print("[GOAT Loader]", text)
-end
-
-local function addRow(order, keyText, valueText)
-	local line = Instance.new("Frame")
-	line.LayoutOrder = order
-	line.BackgroundTransparency = 1
-	line.Size = UDim2.new(1, 0, 0, 16)
-	line.Parent = detailFolder
-
-	local key = Instance.new("TextLabel")
-	key.BackgroundTransparency = 1
-	key.Size = UDim2.new(0, 68, 1, 0)
-	key.Font = Enum.Font.Gotham
-	key.TextSize = 12
-	key.TextXAlignment = Enum.TextXAlignment.Left
-	key.TextColor3 = Theme.Muted
-	key.Text = keyText
-	key.Parent = line
-
-	local value = Instance.new("TextLabel")
-	value.BackgroundTransparency = 1
-	value.Position = UDim2.fromOffset(72, 0)
-	value.Size = UDim2.new(1, -72, 1, 0)
-	value.Font = Enum.Font.GothamMedium
-	value.TextSize = 12
-	value.TextXAlignment = Enum.TextXAlignment.Left
-	value.TextColor3 = Theme.Font
-	value.Text = tostring(valueText)
-	value.Parent = line
+	titleLabel.Text = tostring(text)
+	subLabel.Text = tostring(sub or "")
+	print("[GOAT Loader]", text, sub or "")
 end
 
 local function readLP(name)
@@ -231,89 +203,50 @@ local function formatExpiry(timeLeft)
 	if timeLeft == nil or timeLeft == 0 then
 		return "Lifetime"
 	end
-	return os.date("!%Y-%m-%d %H:%M UTC", os.time() + timeLeft)
+	if timeLeft < 86400 then
+		return string.format("%dh left", math.max(1, math.floor(timeLeft / 3600)))
+	end
+	return string.format("%dd left", math.floor(timeLeft / 86400))
 end
 
-local function showWelcome(extraSeconds)
+local function showWelcome()
 	if welcomeShown then
 		return
 	end
 	welcomeShown = true
 	ensureShell()
-	clearDetails()
 
-	local scriptName = tostring(readLP("LP_SCRIPT_NAME") or "GOAT Hub")
-	local scriptVersion = tostring(readLP("LP_SCRIPT_VERSION") or "1")
 	local discord = tostring(
 		readLP("LP_DISCORD_DISPLAY_NAME")
 			or readLP("LP_DISCORD")
 			or (cachedAuth and cachedAuth.discordUsername)
-			or "unknown"
+			or "user"
 	)
 	local executions = tostring(
 		readLP("LP_EXECUTIONS")
 			or (cachedAuth and cachedAuth.keyExecutions)
 			or "—"
 	)
-	local sessions = tostring(readLP("LP_SESSION_COUNT") or "—")
 	local expiry = formatExpiry(
 		readLP("LP_TIMELEFT")
 			or (cachedAuth and cachedAuth.expire)
 	)
 
-	statusLabel.Text = string.format("%s  ·  v%s", scriptName, scriptVersion)
-
-	local divider = Instance.new("Frame")
-	divider.LayoutOrder = 0
-	divider.Size = UDim2.new(1, 0, 0, 1)
-	divider.BackgroundColor3 = Theme.Outline
-	divider.BackgroundTransparency = 0.25
-	divider.BorderSizePixel = 0
-	divider.Parent = detailFolder
-
-	if extraSeconds then
-		addRow(1, "Auth", string.format("%.2fs", extraSeconds))
-		addRow(2, "User", discord)
-		addRow(3, "Expires", expiry)
-		addRow(4, "Runs", executions)
-		addRow(5, "Online", sessions)
-	else
-		addRow(1, "User", discord)
-		addRow(2, "Expires", expiry)
-		addRow(3, "Runs", executions)
-		addRow(4, "Online", sessions)
-	end
-
-	print("[GOAT Loader] welcome notice shown for", NOTICE_SECONDS, "s")
-
-	task.delay(NOTICE_SECONDS, function()
-		if not (gui and gui.Parent and shell) then
-			return
-		end
-		local info = TweenInfo.new(0.35, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
-		TweenService:Create(shell, info, {
-			Position = UDim2.new(0, 14, 1, 20),
-			BackgroundTransparency = 1,
-		}):Play()
-		task.wait(0.4)
-		if gui and gui.Parent then
-			gui:Destroy()
-		end
-	end)
+	titleLabel.Text = "Welcome, " .. discord
+	subLabel.Text = string.format("%s  ·  %s runs", expiry, executions)
+	print("[GOAT Loader] welcome shown")
+	scheduleDismiss()
 end
 
 -- Must be set BEFORE sdk:loadScript(). Dashboard notification style = "custom".
 getgenv().LP_CUSTOM_LOADER = function(stepOrTime)
 	if stepOrTime == 1 then
-		setStatus("Authenticating…")
+		setStatus("GOAT Hub", "Authenticating…")
 	elseif stepOrTime == 2 then
-		setStatus("Connecting to LuaProt…")
+		setStatus("GOAT Hub", "Connecting…")
 	else
-		local seconds = tonumber(stepOrTime)
-		setStatus(seconds and string.format("Authenticated  ·  %.2fs", seconds) or "Authenticated")
-		task.defer(function()
-			showWelcome(seconds)
-		end)
+		setStatus("GOAT Hub", "Authenticated")
+		task.defer(showWelcome)
 	end
 end
 LP_CUSTOM_LOADER = getgenv().LP_CUSTOM_LOADER
@@ -321,13 +254,12 @@ LP_CUSTOM_LOADER = getgenv().LP_CUSTOM_LOADER
 local function LoadScript()
 	local scriptId = Scripts[GameId]
 	if not scriptId then
-		setStatus("No script for this game")
+		setStatus("GOAT Hub", "No script for this game")
 		warn("[GOAT Loader] No script ID for GameId", GameId)
 		return false
 	end
 
-	-- Visible immediately so we know this file is the one running.
-	setStatus("Loading GOAT Hub…")
+	setStatus("GOAT Hub", "Loading…")
 	print("[GOAT Loader] GameId:", GameId)
 	print("[GOAT Loader] ScriptId:", scriptId)
 
@@ -335,7 +267,7 @@ local function LoadScript()
 		return loadstring(game:HttpGet("https://sdk.luaprot.net/"))()
 	end)
 	if not sdkSuccess then
-		setStatus("SDK failed")
+		setStatus("GOAT Hub", "SDK failed")
 		warn("[GOAT Loader] SDK error:", sdk)
 		return false
 	end
@@ -350,11 +282,10 @@ local function LoadScript()
 	if checkOk and type(checkResult) == "table" and checkResult.status == "VALID" and checkResult.data then
 		cachedAuth = checkResult.data
 		print("[GOAT Loader] checkKey VALID")
-		-- Show welcome now with checkKey data; LP_CUSTOM_LOADER may refine it later.
 		showWelcome()
 	elseif checkOk and type(checkResult) == "table" then
 		print("[GOAT Loader] checkKey:", checkResult.status, checkResult.message)
-		setStatus(tostring(checkResult.status or "Key check failed"))
+		setStatus("GOAT Hub", tostring(checkResult.status or "Key check failed"))
 	else
 		print("[GOAT Loader] checkKey skipped/failed:", checkResult)
 	end
@@ -364,12 +295,11 @@ local function LoadScript()
 		sdk:loadScript(key)
 	end)
 	if not loadOk then
-		setStatus("Load failed")
+		setStatus("GOAT Hub", "Load failed")
 		warn("[GOAT Loader] loadScript error:", loadErr)
 		return false
 	end
 
-	-- Only reached if the protected script returns (rare).
 	print("[GOAT Loader] loadScript returned")
 	showWelcome()
 	return true
