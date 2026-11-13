@@ -1,33 +1,56 @@
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+local TeleportService = game:GetService("TeleportService")
 local LocalPlayer = Players.LocalPlayer
 local GameId = game.GameId
 
-local Scripts = {
-	[3989768869] = "60887533351036579318", -- TSG
-	[4777817887] = "23487425834520961143", -- BB
-	[7326934954] = "36530871158949597907", -- 99
-	[113491250] = "69023828772129730861", -- PF
-	[5369242581] = "88512928415190764448", -- Dow
-	[111958650] = "63528363046657134572", -- arsenal
-	[5995470825] = "48794175449906367489", -- HyperShot
-	[9187332740] = "96418341488361702046", -- Strafe
-	[6035872082] = "70770555380354344965", -- Rivals
-	[6583326485] = "97149832134761200323", -- Groundwars
-	[6726637224] = "38051361310081996139", -- StreetLife
-	[97314177] = "89066052075251198843", -- NinjaTycoon
-	[4730278139] = "46358056084884904300", -- UBG
-	[5200655965] = "05018654462611029174", -- Project Smash
-	[9807649116] = "43582573096609583474", -- Tactical Swat
-	[3258873704] = "81982446223044293233", -- Skywars
+local DISCORD_INVITE = "https://discord.gg/PMYBkah2Kq"
+local DISCORD_LABEL = "discord.gg/PMYBkah2Kq"
+local KEY_FILE = "goat_hub_key.txt"
+local LOGO_IMAGE = "rbxassetid://120910636292753"
+
+-- Catalog from https://goathub.lat/games (Id = universe / game.GameId)
+local Games = {
+	{ Id = 6035872082, Place = 17625359962, Name = "Rivals", Script = "70770555380354344965", Playing = 155515 },
+	{ Id = 7326934954, Place = 79546208627805, Name = "99 Nights in the Forest", Script = "36530871158949597907", Playing = 117422 },
+	{ Id = 5995470825, Place = 17516596118, Name = "Hypershot", Script = "48794175449906367489", Playing = 19590 },
+	{ Id = 4777817887, Place = 13772394625, Name = "Blade Ball", Script = "23487425834520961143", Playing = 14363 },
+	{ Id = 4730278139, Place = 13621938427, Name = "Untitled Boxing Game", Script = "46358056084884904300", Playing = 6370 },
+	{ Id = 111958650, Place = 286090429, Name = "Arsenal", Script = "63528363046657134572", Playing = 3243 },
+	{ Id = 6583326485, Place = 118367369949006, Name = "Ground War", Script = "97149832134761200323", Playing = 2861 },
+	{ Id = 6726637224, Place = 71600459831333, Name = "Street Life Remastered", Script = "38051361310081996139", Playing = 2798 },
+	{ Id = 113491250, Place = 292439477, Name = "Phantom Forces", Script = "69023828772129730861", Playing = 2519 },
+	{ Id = 9807649116, Place = 102837194624695, Name = "Tactical: Swat Simulator", Script = "43582573096609583474", Playing = 2045 },
+	{ Id = 807930589, Place = 2317712696, Name = "The Wild West", Script = nil, Playing = 1632 },
+	{ Id = 3258873704, Place = 8542259458, Name = "SkyWars", Script = "81982446223044293233", Playing = 952 },
+	{ Id = 5200655965, Place = 15092647980, Name = "Project Smash", Script = "05018654462611029174", Playing = 693 },
+	{ Id = 97314177, Place = 221718525, Name = "Ninja Tycoon", Script = "89066052075251198843", Playing = 623 },
+	{ Id = 9187332740, Place = 109020905733214, Name = "STRAFE FPS", Script = "96418341488361702046", Playing = 514 },
+	{ Id = 3989768869, Place = 11156779721, Name = "The Survival Game", Script = "60887533351036579318", Playing = 413 },
+	{ Id = 5369242581, Place = 15555246249, Name = "Dogs of War", Script = "88512928415190764448", Playing = 293 },
 }
+
+local Scripts = {}
+local GameNames = {}
+for _, g in ipairs(Games) do
+	GameNames[g.Id] = g.Name
+	if g.Script then
+		Scripts[g.Id] = g.Script
+	end
+end
 
 local Theme = {
 	Bg = Color3.fromRGB(14, 12, 12),
+	Panel = Color3.fromRGB(20, 17, 16),
+	Input = Color3.fromRGB(28, 24, 22),
 	Accent = Color3.fromRGB(255, 105, 0),
-	Outline = Color3.fromRGB(31, 31, 31),
+	AccentDim = Color3.fromRGB(180, 72, 0),
+	Outline = Color3.fromRGB(42, 36, 32),
 	Font = Color3.fromRGB(241, 235, 225),
 	Muted = Color3.fromRGB(160, 150, 140),
+	Danger = Color3.fromRGB(220, 70, 55),
+	Ok = Color3.fromRGB(90, 180, 110),
 }
 
 local TOAST_W = 210
@@ -38,6 +61,7 @@ local gui, shell, titleLabel, subLabel
 local welcomeShown = false
 local dismissToken = 0
 local cachedAuth = nil
+local keyGui = nil
 
 local function noticeParent()
 	local ok, hui = pcall(function()
@@ -77,6 +101,7 @@ local function scrubOldNotices()
 
 	local killNames = {
 		GoatAuthNotice = true,
+		GoatKeyPrompt = true,
 		LuaProtNotification = true,
 		LuaProtNotify = true,
 		LP_Notification = true,
@@ -280,14 +305,964 @@ getgenv().LP_CUSTOM_LOADER = function(stepOrTime)
 end
 LP_CUSTOM_LOADER = getgenv().LP_CUSTOM_LOADER
 
+local function trim(s)
+	return (tostring(s or ""):gsub("^%s+", ""):gsub("%s+$", ""))
+end
+
+local function readSavedKey()
+	local ok, data = pcall(function()
+		if isfile and isfile(KEY_FILE) and readfile then
+			return readfile(KEY_FILE)
+		end
+		return nil
+	end)
+	if ok and type(data) == "string" then
+		data = trim(data)
+		if data ~= "" and data ~= "x" then
+			return data
+		end
+	end
+	return nil
+end
+
+local function clearSavedKey()
+	pcall(function()
+		if isfile and isfile(KEY_FILE) and delfile then
+			delfile(KEY_FILE)
+		elseif writefile then
+			writefile(KEY_FILE, "")
+		end
+	end)
+end
+
+local function readExistingKey()
+	local candidates = {
+		type(lp_key) == "string" and lp_key or nil,
+		getgenv and getgenv().lp_key,
+		_G and rawget(_G, "lp_key"),
+		readSavedKey(),
+	}
+	for _, key in ipairs(candidates) do
+		if type(key) == "string" then
+			key = trim(key)
+			if key ~= "" and key ~= "x" then
+				return key
+			end
+		end
+	end
+	return nil
+end
+
+local function storeKey(key)
+	key = trim(key)
+	lp_key = key
+	if getgenv then
+		getgenv().lp_key = key
+	end
+	_G.lp_key = key
+	pcall(function()
+		if writefile and key ~= "" then
+			writefile(KEY_FILE, key)
+		end
+	end)
+	return key
+end
+
+local function copyInvite()
+	local ok = pcall(function()
+		local clip = setclipboard or toclipboard or set_clipboard
+		if clip then
+			clip(DISCORD_INVITE)
+		end
+	end)
+	return ok
+end
+
+local function makeButton(parent, text, props)
+	local btn = Instance.new("TextButton")
+	btn.AutoButtonColor = false
+	btn.Text = ""
+	btn.BackgroundColor3 = props.Fill or Theme.Accent
+	btn.BorderSizePixel = 0
+	btn.Size = props.Size
+	btn.Position = props.Position
+	btn.AnchorPoint = props.AnchorPoint or Vector2.new(0, 0)
+	btn.ZIndex = 3
+	btn.Parent = parent
+
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0, 6)
+	corner.Parent = btn
+
+	local stroke = Instance.new("UIStroke")
+	stroke.Color = props.Stroke or Theme.Accent
+	stroke.Thickness = 1
+	stroke.Transparency = props.Outline and 0.15 or 0.45
+	stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+	stroke.Parent = btn
+
+	if props.Ghost then
+		btn.BackgroundTransparency = 1
+	end
+
+	local label = Instance.new("TextLabel")
+	label.BackgroundTransparency = 1
+	label.Size = UDim2.new(1, 0, 1, 0)
+	label.Font = Enum.Font.GothamBold
+	label.TextSize = 12
+	label.Text = text
+	label.TextColor3 = props.TextColor or Theme.Font
+	label.ZIndex = 4
+	label.Parent = btn
+
+	btn.MouseEnter:Connect(function()
+		TweenService:Create(btn, TweenInfo.new(0.12), {
+			BackgroundColor3 = props.Hover or Theme.AccentDim,
+			BackgroundTransparency = props.Ghost and 0.85 or 0,
+		}):Play()
+	end)
+	btn.MouseLeave:Connect(function()
+		TweenService:Create(btn, TweenInfo.new(0.12), {
+			BackgroundColor3 = props.Fill or Theme.Accent,
+			BackgroundTransparency = props.Ghost and 1 or 0,
+		}):Play()
+	end)
+
+	return btn
+end
+
+local function destroyKeyPrompt()
+	if keyGui and keyGui.Parent then
+		keyGui:Destroy()
+	end
+	keyGui = nil
+end
+
+-- Same drag pattern as GoatAuth / Linoria (PC + mobile).
+local function makeDraggable(frame, handle)
+	handle.Active = true
+
+	handle.InputBegan:Connect(function(input)
+		if input.UserInputType ~= Enum.UserInputType.MouseButton1 and input.UserInputType ~= Enum.UserInputType.Touch then
+			return
+		end
+
+		local startPos = frame.Position
+		local dragStart = input.Position
+		local dragging = true
+		local changedConn
+		local endedConn
+
+		changedConn = UserInputService.InputChanged:Connect(function(change)
+			if not dragging then
+				return
+			end
+			if change.UserInputType == Enum.UserInputType.MouseMovement or change.UserInputType == Enum.UserInputType.Touch then
+				local delta = change.Position - dragStart
+				frame.Position = UDim2.new(
+					startPos.X.Scale,
+					startPos.X.Offset + delta.X,
+					startPos.Y.Scale,
+					startPos.Y.Offset + delta.Y
+				)
+			end
+		end)
+
+		endedConn = input.Changed:Connect(function()
+			if input.UserInputState == Enum.UserInputState.End then
+				dragging = false
+				if changedConn then
+					changedConn:Disconnect()
+				end
+				if endedConn then
+					endedConn:Disconnect()
+				end
+			end
+		end)
+	end)
+end
+
+local function formatKeyCheckFailure(result)
+	if type(result) ~= "table" then
+		return "Could not check key"
+	end
+	local status = tostring(result.status or "INVALID")
+	local message = tostring(result.message or "")
+	local labels = {
+		INVALID = "Invalid key",
+		EXPIRED = "Key expired",
+		BLACKLISTED = "Key blacklisted",
+		HWID_MISMATCH = "Wrong HWID",
+		HWID = "Wrong HWID",
+		MISSING_SCRIPTID = "Script misconfigured",
+		RATE_LIMITED = "Too many attempts",
+	}
+	local title = labels[status] or status
+	if message ~= "" and not string.find(string.lower(message), string.lower(title), 1, true) then
+		return title .. " — " .. message
+	end
+	if message ~= "" then
+		return message
+	end
+	return title
+end
+
+local function promptForKey(message, prefills, validateFn)
+	destroyKeyPrompt()
+
+	local finished = false
+	local chosen = nil
+	local busy = false
+	prefills = trim(prefills or "")
+
+	keyGui = Instance.new("ScreenGui")
+	keyGui.Name = "GoatKeyPrompt"
+	keyGui.IgnoreGuiInset = true
+	keyGui.ResetOnSpawn = false
+	keyGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+	keyGui.DisplayOrder = 100001
+	keyGui.Parent = noticeParent()
+
+	local holder = Instance.new("Frame")
+	holder.Name = "Holder"
+	holder.AnchorPoint = Vector2.new(0.5, 0.5)
+	holder.Position = UDim2.new(0.5, 0, 0.5, 18)
+	holder.Size = UDim2.new(0, 360, 0, 368)
+	holder.BackgroundTransparency = 1
+	holder.BorderSizePixel = 0
+	holder.ClipsDescendants = false
+	holder.Parent = keyGui
+
+	local card = Instance.new("Frame")
+	card.Name = "Card"
+	card.Size = UDim2.new(1, 0, 1, 0)
+	card.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+	card.BorderSizePixel = 0
+	card.ClipsDescendants = true
+	card.Parent = holder
+
+	local cardCorner = Instance.new("UICorner")
+	cardCorner.CornerRadius = UDim.new(0, 30)
+	cardCorner.Parent = card
+
+	local cardStroke = Instance.new("UIStroke")
+	cardStroke.Color = Theme.Outline
+	cardStroke.Thickness = 1
+	cardStroke.Transparency = 0.1
+	cardStroke.Parent = card
+
+	local wallpaper = Instance.new("ImageLabel")
+	wallpaper.Name = "Wallpaper"
+	wallpaper.BackgroundTransparency = 1
+	wallpaper.BorderSizePixel = 0
+	wallpaper.Image = "rbxassetid://16073585738"
+	wallpaper.ScaleType = Enum.ScaleType.Fit
+	wallpaper.Size = UDim2.new(1.11064, 0, 1.59989, 0)
+	wallpaper.Position = UDim2.new(-0.03617, 0, -0.158876, 0)
+	wallpaper.ZIndex = 0
+	wallpaper.Active = false
+	wallpaper.Parent = card
+
+	local shade = Instance.new("Frame")
+	shade.Name = "Shade"
+	shade.Size = UDim2.new(1, 0, 1, 0)
+	shade.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	shade.BorderSizePixel = 0
+	shade.ZIndex = 1
+	shade.Active = false
+	shade.Parent = card
+
+	local shadeCorner = Instance.new("UICorner")
+	shadeCorner.CornerRadius = UDim.new(0, 30)
+	shadeCorner.Parent = shade
+
+	local shadeGrad = Instance.new("UIGradient")
+	shadeGrad.Rotation = -90
+	shadeGrad.Color = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.fromRGB(40, 22, 12)),
+		ColorSequenceKeypoint.new(0.45, Color3.fromRGB(28, 22, 18)),
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(14, 12, 12)),
+	})
+	shadeGrad.Transparency = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, 0.35),
+		NumberSequenceKeypoint.new(1, 0.12),
+	})
+	shadeGrad.Parent = shade
+
+	local pattern = Instance.new("ImageLabel")
+	pattern.Name = "Pattern"
+	pattern.BackgroundTransparency = 1
+	pattern.BorderSizePixel = 0
+	pattern.Image = "rbxassetid://2151741365"
+	pattern.ImageTransparency = 0.7
+	pattern.ScaleType = Enum.ScaleType.Tile
+	pattern.TileSize = UDim2.new(0, 256, 0, 256)
+	pattern.Size = UDim2.new(1, 0, 1, 0)
+	pattern.ZIndex = 1
+	pattern.Active = false
+	pattern.Parent = shade
+
+	local dragHandle = Instance.new("TextButton")
+	dragHandle.Name = "DragHandle"
+	dragHandle.BackgroundTransparency = 1
+	dragHandle.BorderSizePixel = 0
+	dragHandle.Text = ""
+	dragHandle.AutoButtonColor = false
+	dragHandle.Size = UDim2.new(1, 0, 1, 0)
+	dragHandle.ZIndex = 2
+	dragHandle.Parent = card
+	makeDraggable(holder, dragHandle)
+
+	local logo = Instance.new("ImageLabel")
+	logo.Name = "Logo"
+	logo.BackgroundTransparency = 1
+	logo.BorderSizePixel = 0
+	logo.Image = LOGO_IMAGE
+	logo.ScaleType = Enum.ScaleType.Fit
+	logo.Position = UDim2.new(0, 22, 0, 18)
+	logo.Size = UDim2.new(0, 40, 0, 40)
+	logo.ZIndex = 3
+	logo.Active = false
+	logo.Parent = card
+
+	local brand = Instance.new("TextLabel")
+	brand.BackgroundTransparency = 1
+	brand.Position = UDim2.new(0, 72, 0, 20)
+	brand.Size = UDim2.new(1, -120, 0, 22)
+	brand.Font = Enum.Font.GothamBlack
+	brand.TextSize = 20
+	brand.TextXAlignment = Enum.TextXAlignment.Left
+	brand.TextColor3 = Theme.Font
+	brand.Text = "GOAT Hub"
+	brand.ZIndex = 3
+	brand.Parent = card
+
+	local tag = Instance.new("TextLabel")
+	tag.BackgroundTransparency = 1
+	tag.Position = UDim2.new(0, 72, 0, 44)
+	tag.Size = UDim2.new(1, -120, 0, 16)
+	tag.Font = Enum.Font.Gotham
+	tag.TextSize = 12
+	tag.TextXAlignment = Enum.TextXAlignment.Left
+	tag.TextColor3 = Theme.Accent
+	tag.Text = "Script loader"
+	tag.ZIndex = 3
+	tag.Parent = card
+
+	local gamesBtn = Instance.new("TextButton")
+	gamesBtn.Name = "Games"
+	gamesBtn.AutoButtonColor = false
+	gamesBtn.Text = ""
+	gamesBtn.Size = UDim2.new(0, 32, 0, 32)
+	gamesBtn.Position = UDim2.new(1, -50, 0, 22)
+	gamesBtn.BackgroundTransparency = 1
+	gamesBtn.BorderSizePixel = 0
+	gamesBtn.ZIndex = 4
+	gamesBtn.Parent = card
+
+	local grid = Instance.new("Frame")
+	grid.Name = "Icon"
+	grid.BackgroundTransparency = 1
+	grid.AnchorPoint = Vector2.new(0.5, 0.5)
+	grid.Position = UDim2.new(0.5, 0, 0.5, 0)
+	grid.Size = UDim2.new(0, 16, 0, 16)
+	grid.ZIndex = 5
+	grid.Parent = gamesBtn
+
+	local gridCells = {}
+	for i = 0, 3 do
+		local cell = Instance.new("Frame")
+		cell.BorderSizePixel = 0
+		cell.BackgroundColor3 = Theme.Accent
+		cell.Size = UDim2.new(0, 6, 0, 6)
+		cell.Position = UDim2.new(0, (i % 2) * 10, 0, math.floor(i / 2) * 10)
+		cell.ZIndex = 6
+		cell.Parent = grid
+		local cellCorner = Instance.new("UICorner")
+		cellCorner.CornerRadius = UDim.new(0, 2)
+		cellCorner.Parent = cell
+		gridCells[i + 1] = cell
+	end
+
+	local function setGamesIconColor(color)
+		for _, cell in ipairs(gridCells) do
+			cell.BackgroundColor3 = color
+		end
+	end
+
+	local info = Instance.new("TextLabel")
+	info.BackgroundTransparency = 1
+	info.Position = UDim2.new(0, 22, 0, 72)
+	info.Size = UDim2.new(1, -44, 0, 36)
+	info.Font = Enum.Font.Gotham
+	info.TextSize = 12
+	info.TextXAlignment = Enum.TextXAlignment.Left
+	info.TextYAlignment = Enum.TextYAlignment.Top
+	info.TextWrapped = true
+	info.TextColor3 = Theme.Muted
+	info.Text = "Paste your key below to load. Need one? Hit Get Key and join the Discord."
+	info.ZIndex = 3
+	info.Parent = card
+
+	local inputWrap = Instance.new("Frame")
+	inputWrap.Position = UDim2.new(0, 22, 0, 116)
+	inputWrap.Size = UDim2.new(1, -44, 0, 48)
+	inputWrap.BackgroundColor3 = Color3.fromRGB(24, 24, 24)
+	inputWrap.BackgroundTransparency = 0.1
+	inputWrap.BorderSizePixel = 0
+	inputWrap.ZIndex = 3
+	inputWrap.ClipsDescendants = true
+	inputWrap.Parent = card
+
+	local inputCorner = Instance.new("UICorner")
+	inputCorner.CornerRadius = UDim.new(0, 7)
+	inputCorner.Parent = inputWrap
+
+	local inputGrad = Instance.new("Frame")
+	inputGrad.Name = "Gradient"
+	inputGrad.Size = UDim2.new(1, 0, 1, 0)
+	inputGrad.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	inputGrad.BorderSizePixel = 0
+	inputGrad.ZIndex = 3
+	inputGrad.Parent = inputWrap
+
+	local inputGradCorner = Instance.new("UICorner")
+	inputGradCorner.CornerRadius = UDim.new(0, 7)
+	inputGradCorner.Parent = inputGrad
+
+	local inputGradSeq = Instance.new("UIGradient")
+	inputGradSeq.Rotation = -90
+	inputGradSeq.Color = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.fromRGB(90, 42, 8)),
+		ColorSequenceKeypoint.new(0.55, Color3.fromRGB(40, 28, 20)),
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(24, 20, 18)),
+	})
+	inputGradSeq.Parent = inputGrad
+
+	local inputStroke = Instance.new("UIStroke")
+	inputStroke.Color = Theme.Accent
+	inputStroke.Thickness = 2
+	inputStroke.Transparency = 0.35
+	inputStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+	inputStroke.Parent = inputWrap
+
+	local inputStrokeGrad = Instance.new("UIGradient")
+	inputStrokeGrad.Rotation = -90
+	inputStrokeGrad.Color = ColorSequence.new(Theme.Accent, Theme.Accent)
+	inputStrokeGrad.Transparency = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, 0),
+		NumberSequenceKeypoint.new(0.9, 0.995),
+		NumberSequenceKeypoint.new(1, 1),
+	})
+	inputStrokeGrad.Parent = inputStroke
+
+	local enterLabel = Instance.new("TextLabel")
+	enterLabel.Name = "EnterLabel"
+	enterLabel.BackgroundTransparency = 1
+	enterLabel.AnchorPoint = Vector2.new(0.5, 0.5)
+	enterLabel.Position = UDim2.new(0.28, 0, 0.5, 0)
+	enterLabel.Size = UDim2.new(0.42, 0, 0.52, 0)
+	enterLabel.Font = Enum.Font.GothamMedium
+	enterLabel.TextScaled = true
+	enterLabel.TextXAlignment = Enum.TextXAlignment.Left
+	enterLabel.TextYAlignment = Enum.TextYAlignment.Center
+	enterLabel.TextColor3 = Theme.Font
+	enterLabel.Text = "ENTER KEY HERE"
+	enterLabel.ZIndex = 4
+	enterLabel.Parent = inputWrap
+
+	local enterSizeCap = Instance.new("UITextSizeConstraint")
+	enterSizeCap.MaxTextSize = 13
+	enterSizeCap.MinTextSize = 9
+	enterSizeCap.Parent = enterLabel
+
+	local box = Instance.new("TextBox")
+	box.Name = "Textbox"
+	box.AnchorPoint = Vector2.new(0.5, 0.5)
+	box.Position = UDim2.new(0.78, 0, 0.5, 0)
+	box.Size = UDim2.new(0.34, 0, 0.62, 0)
+	box.BackgroundColor3 = Color3.fromRGB(24, 24, 24)
+	box.BackgroundTransparency = 0.15
+	box.BorderSizePixel = 0
+	box.ClearTextOnFocus = false
+	box.Font = Enum.Font.Gotham
+	box.TextScaled = true
+	box.TextXAlignment = Enum.TextXAlignment.Center
+	box.TextYAlignment = Enum.TextYAlignment.Center
+	box.TextColor3 = Theme.Font
+	box.PlaceholderColor3 = Color3.fromRGB(178, 178, 178)
+	box.PlaceholderText = "..."
+	box.Text = prefills
+	box.ZIndex = 4
+	box.Parent = inputWrap
+
+	local boxSizeCap = Instance.new("UITextSizeConstraint")
+	boxSizeCap.MaxTextSize = 13
+	boxSizeCap.MinTextSize = 9
+	boxSizeCap.Parent = box
+
+	local boxCorner = Instance.new("UICorner")
+	boxCorner.CornerRadius = UDim.new(0, 7)
+	boxCorner.Parent = box
+
+	local boxStroke = Instance.new("UIStroke")
+	boxStroke.Color = Theme.Accent
+	boxStroke.Thickness = 1.25
+	boxStroke.Transparency = 0.45
+	boxStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+	boxStroke.Parent = box
+
+	local boxStrokeGrad = Instance.new("UIGradient")
+	boxStrokeGrad.Rotation = -90
+	boxStrokeGrad.Transparency = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, 0),
+		NumberSequenceKeypoint.new(0.9, 0.995),
+		NumberSequenceKeypoint.new(1, 1),
+	})
+	boxStrokeGrad.Parent = boxStroke
+
+	box.Focused:Connect(function()
+		TweenService:Create(inputStroke, TweenInfo.new(0.12), { Transparency = 0.1 }):Play()
+		TweenService:Create(boxStroke, TweenInfo.new(0.12), { Transparency = 0.15 }):Play()
+	end)
+	box.FocusLost:Connect(function()
+		TweenService:Create(inputStroke, TweenInfo.new(0.12), { Transparency = 0.35 }):Play()
+		TweenService:Create(boxStroke, TweenInfo.new(0.12), { Transparency = 0.45 }):Play()
+	end)
+
+	local getBtn = makeButton(card, "Get Key", {
+		Size = UDim2.new(0, 150, 0, 36),
+		Position = UDim2.new(0, 22, 0, 180),
+		Fill = Theme.Input,
+		Hover = Color3.fromRGB(38, 32, 28),
+		Stroke = Theme.Outline,
+		Outline = true,
+		TextColor = Theme.Font,
+	})
+
+	local submitBtn = makeButton(card, "Continue", {
+		Size = UDim2.new(0, 150, 0, 36),
+		Position = UDim2.new(1, -172, 0, 180),
+		Fill = Theme.Accent,
+		Hover = Color3.fromRGB(255, 130, 30),
+		Stroke = Theme.Accent,
+		TextColor = Color3.fromRGB(20, 12, 6),
+	})
+
+	local discordLine = Instance.new("TextLabel")
+	discordLine.BackgroundTransparency = 1
+	discordLine.Position = UDim2.new(0, 22, 0, 226)
+	discordLine.Size = UDim2.new(1, -44, 0, 16)
+	discordLine.Font = Enum.Font.GothamMedium
+	discordLine.TextSize = 11
+	discordLine.TextXAlignment = Enum.TextXAlignment.Left
+	discordLine.TextColor3 = Theme.Muted
+	discordLine.Text = DISCORD_LABEL
+	discordLine.ZIndex = 3
+	discordLine.Parent = card
+
+	local status = Instance.new("TextLabel")
+	status.BackgroundTransparency = 1
+	status.Position = UDim2.new(0, 22, 0, 246)
+	status.Size = UDim2.new(1, -44, 0, 16)
+	status.Font = Enum.Font.Gotham
+	status.TextSize = 11
+	status.TextXAlignment = Enum.TextXAlignment.Left
+	status.TextColor3 = Theme.Muted
+	status.Text = message or "Key required to load."
+	status.TextTruncate = Enum.TextTruncate.AtEnd
+	status.ZIndex = 3
+	status.Parent = card
+
+	local closeBtn = makeButton(card, "Close", {
+		Size = UDim2.new(1, -44, 0, 34),
+		Position = UDim2.new(0, 22, 0, 296),
+		Fill = Theme.Accent,
+		Hover = Color3.fromRGB(255, 130, 30),
+		Stroke = Theme.Accent,
+		Ghost = true,
+		TextColor = Theme.Accent,
+	})
+
+	local gamesPanel = Instance.new("Frame")
+	gamesPanel.Name = "GamesPanel"
+	gamesPanel.AnchorPoint = Vector2.new(0, 0)
+	gamesPanel.Position = UDim2.new(1, 8, 0, 0)
+	gamesPanel.Size = UDim2.new(0, 0, 1, 0)
+	gamesPanel.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+	gamesPanel.BorderSizePixel = 0
+	gamesPanel.ClipsDescendants = true
+	gamesPanel.Visible = false
+	gamesPanel.ZIndex = 6
+	gamesPanel.Parent = holder
+
+	local gamesPanelCorner = Instance.new("UICorner")
+	gamesPanelCorner.CornerRadius = UDim.new(0, 30)
+	gamesPanelCorner.Parent = gamesPanel
+
+	local gamesPanelStroke = Instance.new("UIStroke")
+	gamesPanelStroke.Color = Theme.Outline
+	gamesPanelStroke.Thickness = 1
+	gamesPanelStroke.Transparency = 0.1
+	gamesPanelStroke.Parent = gamesPanel
+
+	local gamesWallpaper = Instance.new("ImageLabel")
+	gamesWallpaper.Name = "Wallpaper"
+	gamesWallpaper.BackgroundTransparency = 1
+	gamesWallpaper.BorderSizePixel = 0
+	gamesWallpaper.Image = "rbxassetid://16073585738"
+	gamesWallpaper.ScaleType = Enum.ScaleType.Fit
+	gamesWallpaper.Size = UDim2.new(1.11064, 0, 1.59989, 0)
+	gamesWallpaper.Position = UDim2.new(-0.03617, 0, -0.158876, 0)
+	gamesWallpaper.ZIndex = 6
+	gamesWallpaper.Active = false
+	gamesWallpaper.Parent = gamesPanel
+
+	local gamesShade = Instance.new("Frame")
+	gamesShade.Name = "Shade"
+	gamesShade.Size = UDim2.new(1, 0, 1, 0)
+	gamesShade.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	gamesShade.BorderSizePixel = 0
+	gamesShade.ZIndex = 6
+	gamesShade.Active = false
+	gamesShade.Parent = gamesPanel
+
+	local gamesShadeCorner = Instance.new("UICorner")
+	gamesShadeCorner.CornerRadius = UDim.new(0, 30)
+	gamesShadeCorner.Parent = gamesShade
+
+	local gamesShadeGrad = Instance.new("UIGradient")
+	gamesShadeGrad.Rotation = -90
+	gamesShadeGrad.Color = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.fromRGB(40, 22, 12)),
+		ColorSequenceKeypoint.new(0.45, Color3.fromRGB(28, 22, 18)),
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(14, 12, 12)),
+	})
+	gamesShadeGrad.Transparency = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, 0.35),
+		NumberSequenceKeypoint.new(1, 0.12),
+	})
+	gamesShadeGrad.Parent = gamesShade
+
+	local gamesPattern = Instance.new("ImageLabel")
+	gamesPattern.Name = "Pattern"
+	gamesPattern.BackgroundTransparency = 1
+	gamesPattern.BorderSizePixel = 0
+	gamesPattern.Image = "rbxassetid://2151741365"
+	gamesPattern.ImageTransparency = 0.7
+	gamesPattern.ScaleType = Enum.ScaleType.Tile
+	gamesPattern.TileSize = UDim2.new(0, 256, 0, 256)
+	gamesPattern.Size = UDim2.new(1, 0, 1, 0)
+	gamesPattern.ZIndex = 6
+	gamesPattern.Active = false
+	gamesPattern.Parent = gamesShade
+
+	local gamesTitle = Instance.new("TextLabel")
+	gamesTitle.BackgroundTransparency = 1
+	gamesTitle.Position = UDim2.new(0, 14, 0, 14)
+	gamesTitle.Size = UDim2.new(1, -28, 0, 18)
+	gamesTitle.Font = Enum.Font.GothamBold
+	gamesTitle.TextSize = 13
+	gamesTitle.TextXAlignment = Enum.TextXAlignment.Left
+	gamesTitle.TextColor3 = Theme.Font
+	gamesTitle.Text = "Supported Games"
+	gamesTitle.ZIndex = 8
+	gamesTitle.Parent = gamesPanel
+
+	local gamesSub = Instance.new("TextLabel")
+	gamesSub.BackgroundTransparency = 1
+	gamesSub.Position = UDim2.new(0, 14, 0, 34)
+	gamesSub.Size = UDim2.new(1, -28, 0, 14)
+	gamesSub.Font = Enum.Font.Gotham
+	gamesSub.TextSize = 10
+	gamesSub.TextXAlignment = Enum.TextXAlignment.Left
+	gamesSub.TextColor3 = Theme.Muted
+	gamesSub.Text = GameNames[GameId] and ("Playing · " .. GameNames[GameId]) or "Tap a game to join it"
+	gamesSub.TextTruncate = Enum.TextTruncate.AtEnd
+	gamesSub.ZIndex = 8
+	gamesSub.Parent = gamesPanel
+
+	local gamesScroll = Instance.new("ScrollingFrame")
+	gamesScroll.Name = "List"
+	gamesScroll.BackgroundTransparency = 1
+	gamesScroll.BorderSizePixel = 0
+	gamesScroll.Position = UDim2.new(0, 10, 0, 56)
+	gamesScroll.Size = UDim2.new(1, -20, 1, -68)
+	gamesScroll.ScrollBarThickness = 3
+	gamesScroll.ScrollBarImageColor3 = Theme.Accent
+	gamesScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+	gamesScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+	gamesScroll.ZIndex = 8
+	gamesScroll.Parent = gamesPanel
+
+	local gamesLayout = Instance.new("UIListLayout")
+	gamesLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	gamesLayout.Padding = UDim.new(0, 6)
+	gamesLayout.Parent = gamesScroll
+
+	local gamesPad = Instance.new("UIPadding")
+	gamesPad.PaddingBottom = UDim.new(0, 8)
+	gamesPad.Parent = gamesScroll
+
+	local sortedGames = {}
+	for i, g in ipairs(Games) do
+		sortedGames[i] = g
+	end
+	table.sort(sortedGames, function(a, b)
+		local aHere = a.Id == GameId
+		local bHere = b.Id == GameId
+		if aHere ~= bHere then
+			return aHere
+		end
+		return (a.Playing or 0) > (b.Playing or 0)
+	end)
+
+	local function joinGame(placeId, gameName)
+		if not placeId then
+			return
+		end
+		gamesSub.Text = "Joining " .. gameName .. "…"
+		gamesSub.TextColor3 = Theme.Accent
+		local ok = pcall(function()
+			TeleportService:Teleport(placeId, LocalPlayer)
+		end)
+		if not ok then
+			gamesSub.Text = "Teleport failed"
+			gamesSub.TextColor3 = Theme.Danger
+		end
+	end
+
+	for order, g in ipairs(sortedGames) do
+		local id = g.Id
+		local here = id == GameId
+		local row = Instance.new("TextButton")
+		row.Name = g.Name
+		row.LayoutOrder = order
+		row.AutoButtonColor = false
+		row.Text = ""
+		row.BackgroundColor3 = Theme.Input
+		row.BackgroundTransparency = here and 0.05 or 0.28
+		row.BorderSizePixel = 0
+		row.Size = UDim2.new(1, -4, 0, here and 54 or 46)
+		row.ZIndex = 9
+		row.Parent = gamesScroll
+
+		local rowCorner = Instance.new("UICorner")
+		rowCorner.CornerRadius = UDim.new(0, 10)
+		rowCorner.Parent = row
+
+		if here then
+			local rowStroke = Instance.new("UIStroke")
+			rowStroke.Color = Theme.Accent
+			rowStroke.Thickness = 1.5
+			rowStroke.Transparency = 0.15
+			rowStroke.Parent = row
+		end
+
+		local icon = Instance.new("ImageLabel")
+		icon.BackgroundColor3 = Color3.fromRGB(24, 24, 24)
+		icon.BorderSizePixel = 0
+		icon.Position = UDim2.new(0, 7, 0.5, 0)
+		icon.AnchorPoint = Vector2.new(0, 0.5)
+		icon.Size = UDim2.new(0, here and 38 or 32, 0, here and 38 or 32)
+		icon.Image = string.format("rbxthumb://type=GameIcon&id=%d&w=150&h=150", id)
+		icon.ScaleType = Enum.ScaleType.Crop
+		icon.ZIndex = 10
+		icon.Active = false
+		icon.Parent = row
+
+		local iconCorner = Instance.new("UICorner")
+		iconCorner.CornerRadius = UDim.new(0, 7)
+		iconCorner.Parent = icon
+
+		local name = Instance.new("TextLabel")
+		name.BackgroundTransparency = 1
+		name.Position = UDim2.new(0, here and 54 or 46, 0, here and 8 or 0)
+		name.Size = UDim2.new(1, here and -62 or -54, 0, here and 18 or 46)
+		name.Font = Enum.Font.GothamMedium
+		name.TextSize = 11
+		name.TextXAlignment = Enum.TextXAlignment.Left
+		name.TextYAlignment = here and Enum.TextYAlignment.Top or Enum.TextYAlignment.Center
+		name.TextTruncate = Enum.TextTruncate.AtEnd
+		name.TextColor3 = Theme.Font
+		name.Text = g.Name
+		name.ZIndex = 10
+		name.Parent = row
+
+		if here then
+			local badge = Instance.new("TextLabel")
+			badge.BackgroundTransparency = 1
+			badge.Position = UDim2.new(0, 54, 0, 28)
+			badge.Size = UDim2.new(1, -62, 0, 14)
+			badge.Font = Enum.Font.GothamBold
+			badge.TextSize = 10
+			badge.TextXAlignment = Enum.TextXAlignment.Left
+			badge.TextColor3 = Theme.Accent
+			badge.Text = "YOU'RE IN THIS GAME"
+			badge.ZIndex = 10
+			badge.Parent = row
+		else
+			local tip = Instance.new("TextLabel")
+			tip.BackgroundTransparency = 1
+			tip.AnchorPoint = Vector2.new(1, 0.5)
+			tip.Position = UDim2.new(1, -10, 0.5, 0)
+			tip.Size = UDim2.new(0, 36, 0, 14)
+			tip.Font = Enum.Font.GothamBold
+			tip.TextSize = 9
+			tip.TextXAlignment = Enum.TextXAlignment.Right
+			tip.TextColor3 = Theme.Muted
+			tip.Text = "JOIN"
+			tip.ZIndex = 10
+			tip.Parent = row
+		end
+
+		row.MouseEnter:Connect(function()
+			if not here then
+				TweenService:Create(row, TweenInfo.new(0.12), {
+					BackgroundTransparency = 0.1,
+				}):Play()
+			end
+		end)
+		row.MouseLeave:Connect(function()
+			if not here then
+				TweenService:Create(row, TweenInfo.new(0.12), {
+					BackgroundTransparency = 0.28,
+				}):Play()
+			end
+		end)
+		row.MouseButton1Click:Connect(function()
+			if here then
+				gamesSub.Text = "Already in " .. g.Name
+				gamesSub.TextColor3 = Theme.Muted
+				return
+			end
+			joinGame(g.Place, g.Name)
+		end)
+	end
+
+	local gamesOpen = false
+	local function setGamesOpen(open)
+		gamesOpen = open
+		if open then
+			gamesPanel.Visible = true
+			TweenService:Create(gamesPanel, TweenInfo.new(0.22, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+				Size = UDim2.new(0, 248, 1, 0),
+			}):Play()
+			setGamesIconColor(Color3.fromRGB(255, 160, 70))
+		else
+			local tween = TweenService:Create(gamesPanel, TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+				Size = UDim2.new(0, 0, 1, 0),
+			})
+			tween:Play()
+			tween.Completed:Connect(function()
+				if not gamesOpen then
+					gamesPanel.Visible = false
+				end
+			end)
+			setGamesIconColor(Theme.Accent)
+		end
+	end
+
+	TweenService:Create(holder, TweenInfo.new(0.28, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+		Position = UDim2.new(0.5, 0, 0.5, 0),
+	}):Play()
+
+	local function setPromptStatus(text, color)
+		status.Text = tostring(text)
+		status.TextColor3 = color or Theme.Muted
+	end
+
+	getBtn.MouseButton1Click:Connect(function()
+		if copyInvite() then
+			setPromptStatus("Invite copied — paste in your browser.", Theme.Ok)
+		else
+			setPromptStatus("Copy failed. Join " .. DISCORD_LABEL, Theme.Danger)
+		end
+	end)
+
+	gamesBtn.MouseEnter:Connect(function()
+		setGamesIconColor(Color3.fromRGB(255, 160, 70))
+	end)
+	gamesBtn.MouseLeave:Connect(function()
+		setGamesIconColor(gamesOpen and Color3.fromRGB(255, 160, 70) or Theme.Accent)
+	end)
+	gamesBtn.MouseButton1Click:Connect(function()
+		setGamesOpen(not gamesOpen)
+	end)
+
+	setGamesOpen(true)
+
+	local function trySubmit()
+		if busy then
+			return
+		end
+		local key = trim(box.Text)
+		if key == "" then
+			setPromptStatus("Enter a key first.", Theme.Danger)
+			return
+		end
+
+		if not validateFn then
+			chosen = key
+			finished = true
+			return
+		end
+
+		busy = true
+		setPromptStatus("Checking key…", Theme.Muted)
+		task.spawn(function()
+			local ok, passed, detail = pcall(validateFn, key)
+			if not finished and keyGui and keyGui.Parent then
+				if ok and passed then
+					setPromptStatus("Key accepted", Theme.Ok)
+					chosen = key
+					finished = true
+				else
+					local reason = "Invalid key"
+					if ok then
+						reason = tostring(detail or reason)
+					else
+						reason = "Check failed — try again"
+					end
+					setPromptStatus(reason, Theme.Danger)
+					busy = false
+				end
+			else
+				busy = false
+			end
+		end)
+	end
+
+	local function tryClose()
+		if busy then
+			return
+		end
+		chosen = nil
+		finished = true
+	end
+
+	submitBtn.MouseButton1Click:Connect(trySubmit)
+	closeBtn.MouseButton1Click:Connect(tryClose)
+	box.FocusLost:Connect(function(enter)
+		if enter then
+			trySubmit()
+		end
+	end)
+
+	while not finished do
+		task.wait()
+	end
+
+	destroyKeyPrompt()
+	return chosen
+end
+
 local function LoadScript()
 	local scriptId = Scripts[GameId]
 	if not scriptId then
 		setStatus("GOAT Hub", "No script for this game")
 		return false
 	end
-
-	setStatus("GOAT Hub", "Loading…")
 
 	local sdkSuccess, sdk = pcall(function()
 		return loadstring(game:HttpGet("https://sdk.luaprot.net/"))()
@@ -299,16 +1274,42 @@ local function LoadScript()
 
 	sdk.scriptId = scriptId
 
-	local key = lp_key or "x"
-	local checkOk, checkResult = pcall(function()
-		return sdk:checkKey(key)
-	end)
-	if checkOk and type(checkResult) == "table" and checkResult.status == "VALID" and checkResult.data then
-		cachedAuth = checkResult.data
-		showWelcome()
-	elseif checkOk and type(checkResult) == "table" then
-		setStatus("GOAT Hub", tostring(checkResult.status or "Key check failed"))
+	local function validateKey(key)
+		local checkOk, checkResult = pcall(function()
+			return sdk:checkKey(key)
+		end)
+		if checkOk and type(checkResult) == "table" and checkResult.status == "VALID" and checkResult.data then
+			cachedAuth = checkResult.data
+			return true, checkResult
+		end
+		if checkOk and type(checkResult) == "table" then
+			return false, formatKeyCheckFailure(checkResult)
+		end
+		return false, "Could not reach LuaProt"
 	end
+
+	local key = readExistingKey()
+	if key then
+		setStatus("GOAT Hub", "Checking key…")
+		local ok, passed, detail = pcall(validateKey, key)
+		if not (ok and passed) then
+			clearSavedKey()
+			local reason = (ok and detail) or "Saved key failed — enter a new one"
+			key = promptForKey(tostring(reason), key, validateKey)
+			if not key then
+				return false
+			end
+		end
+	else
+		key = promptForKey("No key found — enter yours to continue.", nil, validateKey)
+		if not key then
+			return false
+		end
+	end
+
+	storeKey(key)
+	showWelcome()
+	setStatus("GOAT Hub", "Loading…")
 
 	local loadOk = pcall(function()
 		sdk:loadScript(key)
