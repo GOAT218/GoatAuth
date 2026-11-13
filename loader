@@ -1,31 +1,3 @@
---[[
-	GOAT Hub — LuaProt Loader
-
-	Why the old notice never showed:
-	  sdk:loadScript() runs your full script and never returns, so any
-	  code AFTER loadScript() never runs.
-
-	Correct flow (LuaProt docs):
-	  1) Set LP_CUSTOM_LOADER before loading (dashboard style must be "custom")
-	  2) Optionally sdk:checkKey() for welcome data before loadScript
-	  3) Then sdk:loadScript()
-
-	Docs:
-	  https://docs.luaprot.net/luaprot/macro-documentation/custom-loading-ui
-	  https://docs.luaprot.net/luaprot/macro-documentation/key-check-library
-	  https://docs.luaprot.net/luaprot/macro-documentation/v3-runtime-variables
-]]
-
-print("[GOAT Loader] file loaded — if you don't see this, you're running an old copy")
-
-local prefix = ""
-if lp_key then
-	prefix = "local lp_key = '" .. lp_key .. "'\n"
-end
-prefix = prefix .. [[
--- luaprot initialization
-]]
-
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local LocalPlayer = Players.LocalPlayer
@@ -55,14 +27,17 @@ local Theme = {
 	Accent = Color3.fromRGB(255, 105, 0),
 	Outline = Color3.fromRGB(31, 31, 31),
 	Font = Color3.fromRGB(241, 235, 225),
+	Muted = Color3.fromRGB(160, 150, 140),
 }
-Theme.Muted = Theme.Font:Lerp(Color3.fromRGB(90, 85, 80), 0.45)
 
-local NOTICE_SECONDS = 8
+local TOAST_W = 210
+local TOAST_H = 48
+local NOTICE_SECONDS = 7
+
 local gui, shell, titleLabel, subLabel
 local welcomeShown = false
 local dismissToken = 0
-local cachedAuth = nil -- from checkKey
+local cachedAuth = nil
 
 local function noticeParent()
 	local ok, hui = pcall(function()
@@ -84,16 +59,48 @@ local function noticeParent()
 	return LocalPlayer:WaitForChild("PlayerGui")
 end
 
+local function scrubOldNotices()
+	local parents = {}
+	local okHui, hui = pcall(function()
+		return gethui and gethui()
+	end)
+	if okHui and hui then
+		table.insert(parents, hui)
+	end
+	local pg = LocalPlayer:FindFirstChildOfClass("PlayerGui")
+	if pg then
+		table.insert(parents, pg)
+	end
+	pcall(function()
+		table.insert(parents, game:GetService("CoreGui"))
+	end)
+
+	local killNames = {
+		GoatAuthNotice = true,
+		LuaProtNotification = true,
+		LuaProtNotify = true,
+		LP_Notification = true,
+		LPNotification = true,
+	}
+	for _, parent in ipairs(parents) do
+		for _, child in ipairs(parent:GetChildren()) do
+			if killNames[child.Name] or (typeof(child.Name) == "string" and string.find(string.lower(child.Name), "luaprot")) then
+				pcall(function()
+					child:Destroy()
+				end)
+			end
+		end
+	end
+end
+
 local function ensureShell()
-	if gui and gui.Parent then
+	if gui and gui.Parent and shell and shell.Parent then
+		shell.Size = UDim2.new(0, TOAST_W, 0, TOAST_H)
+		shell.AutomaticSize = Enum.AutomaticSize.None
 		return
 	end
 
-	local parent = noticeParent()
-	local old = parent:FindFirstChild("GoatAuthNotice")
-	if old then
-		old:Destroy()
-	end
+	scrubOldNotices()
 
 	gui = Instance.new("ScreenGui")
 	gui.Name = "GoatAuthNotice"
@@ -101,84 +108,104 @@ local function ensureShell()
 	gui.ResetOnSpawn = false
 	gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 	gui.DisplayOrder = 100000
-	gui.Parent = parent
+	gui.Parent = noticeParent()
 
 	shell = Instance.new("Frame")
 	shell.Name = "Shell"
 	shell.AnchorPoint = Vector2.new(0, 1)
-	shell.Position = UDim2.new(0, 14, 1, 40)
-	shell.Size = UDim2.fromOffset(220, 52)
+	shell.Position = UDim2.new(0, 14, 1, 36)
+	shell.Size = UDim2.new(0, TOAST_W, 0, TOAST_H)
+	shell.AutomaticSize = Enum.AutomaticSize.None
 	shell.BackgroundColor3 = Theme.Bg
-	shell.BackgroundTransparency = 0.08
+	shell.BackgroundTransparency = 0.05
 	shell.BorderSizePixel = 0
+	shell.ClipsDescendants = true
 	shell.Parent = gui
-	Instance.new("UICorner", shell).CornerRadius = UDim.new(0, 8)
+
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0, 8)
+	corner.Parent = shell
 
 	local stroke = Instance.new("UIStroke")
 	stroke.Color = Theme.Outline
 	stroke.Thickness = 1
-	stroke.Transparency = 0.15
+	stroke.Transparency = 0.2
 	stroke.Parent = shell
 
+	local cap = Instance.new("UISizeConstraint")
+	cap.MaxSize = Vector2.new(TOAST_W, TOAST_H)
+	cap.MinSize = Vector2.new(TOAST_W, TOAST_H)
+	cap.Parent = shell
+
 	local accent = Instance.new("Frame")
-	accent.Size = UDim2.new(0, 3, 1, -12)
-	accent.Position = UDim2.fromOffset(6, 6)
+	accent.Name = "Accent"
+	accent.AnchorPoint = Vector2.new(0, 0.5)
+	accent.Position = UDim2.new(0, 7, 0.5, 0)
+	accent.Size = UDim2.new(0, 3, 0, 28)
 	accent.BackgroundColor3 = Theme.Accent
 	accent.BorderSizePixel = 0
 	accent.Parent = shell
-	Instance.new("UICorner", accent).CornerRadius = UDim.new(1, 0)
+	local accentCorner = Instance.new("UICorner")
+	accentCorner.CornerRadius = UDim.new(1, 0)
+	accentCorner.Parent = accent
 
 	titleLabel = Instance.new("TextLabel")
+	titleLabel.Name = "Title"
 	titleLabel.BackgroundTransparency = 1
-	titleLabel.Position = UDim2.fromOffset(16, 8)
-	titleLabel.Size = UDim2.new(1, -24, 0, 18)
+	titleLabel.Position = UDim2.new(0, 16, 0, 7)
+	titleLabel.Size = UDim2.new(0, TOAST_W - 24, 0, 16)
 	titleLabel.Font = Enum.Font.GothamBold
-	titleLabel.TextSize = 13
+	titleLabel.TextSize = 12
 	titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+	titleLabel.TextYAlignment = Enum.TextYAlignment.Center
 	titleLabel.TextColor3 = Theme.Font
+	titleLabel.TextTruncate = Enum.TextTruncate.AtEnd
 	titleLabel.Text = "GOAT Hub"
 	titleLabel.Parent = shell
 
 	subLabel = Instance.new("TextLabel")
+	subLabel.Name = "Sub"
 	subLabel.BackgroundTransparency = 1
-	subLabel.Position = UDim2.fromOffset(16, 28)
-	subLabel.Size = UDim2.new(1, -24, 0, 14)
+	subLabel.Position = UDim2.new(0, 16, 0, 25)
+	subLabel.Size = UDim2.new(0, TOAST_W - 24, 0, 14)
 	subLabel.Font = Enum.Font.Gotham
 	subLabel.TextSize = 11
 	subLabel.TextXAlignment = Enum.TextXAlignment.Left
+	subLabel.TextYAlignment = Enum.TextYAlignment.Center
 	subLabel.TextColor3 = Theme.Muted
+	subLabel.TextTruncate = Enum.TextTruncate.AtEnd
 	subLabel.Text = ""
 	subLabel.Parent = shell
 
-	TweenService:Create(shell, TweenInfo.new(0.28, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+	TweenService:Create(shell, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
 		Position = UDim2.new(0, 14, 1, -14),
 	}):Play()
 end
 
 local function scheduleDismiss()
-	dismissToken += 1
+	dismissToken = dismissToken + 1
 	local token = dismissToken
 	task.delay(NOTICE_SECONDS, function()
 		if token ~= dismissToken or not (gui and gui.Parent and shell) then
 			return
 		end
-		local info = TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
-		TweenService:Create(shell, info, {
-			Position = UDim2.new(0, 14, 1, 40),
+		TweenService:Create(shell, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+			Position = UDim2.new(0, 14, 1, 36),
 			BackgroundTransparency = 1,
 		}):Play()
-		task.wait(0.32)
+		task.wait(0.28)
 		if token == dismissToken and gui and gui.Parent then
 			gui:Destroy()
+			gui = nil
+			shell = nil
 		end
 	end)
 end
 
-local function setStatus(text, sub)
+local function setStatus(title, sub)
 	ensureShell()
-	titleLabel.Text = tostring(text)
+	titleLabel.Text = tostring(title)
 	subLabel.Text = tostring(sub or "")
-	print("[GOAT Loader]", text, sub or "")
 end
 
 local function readLP(name)
@@ -222,6 +249,10 @@ local function showWelcome()
 			or (cachedAuth and cachedAuth.discordUsername)
 			or "user"
 	)
+	if #discord > 18 then
+		discord = string.sub(discord, 1, 17) .. "…"
+	end
+
 	local executions = tostring(
 		readLP("LP_EXECUTIONS")
 			or (cachedAuth and cachedAuth.keyExecutions)
@@ -233,12 +264,10 @@ local function showWelcome()
 	)
 
 	titleLabel.Text = "Welcome, " .. discord
-	subLabel.Text = string.format("%s  ·  %s runs", expiry, executions)
-	print("[GOAT Loader] welcome shown")
+	subLabel.Text = expiry .. "  ·  " .. executions .. " runs"
 	scheduleDismiss()
 end
 
--- Must be set BEFORE sdk:loadScript(). Dashboard notification style = "custom".
 getgenv().LP_CUSTOM_LOADER = function(stepOrTime)
 	if stepOrTime == 1 then
 		setStatus("GOAT Hub", "Authenticating…")
@@ -255,52 +284,40 @@ local function LoadScript()
 	local scriptId = Scripts[GameId]
 	if not scriptId then
 		setStatus("GOAT Hub", "No script for this game")
-		warn("[GOAT Loader] No script ID for GameId", GameId)
 		return false
 	end
 
 	setStatus("GOAT Hub", "Loading…")
-	print("[GOAT Loader] GameId:", GameId)
-	print("[GOAT Loader] ScriptId:", scriptId)
 
 	local sdkSuccess, sdk = pcall(function()
 		return loadstring(game:HttpGet("https://sdk.luaprot.net/"))()
 	end)
 	if not sdkSuccess then
 		setStatus("GOAT Hub", "SDK failed")
-		warn("[GOAT Loader] SDK error:", sdk)
 		return false
 	end
 
 	sdk.scriptId = scriptId
 
-	-- Pull welcome data BEFORE loadScript (loadScript never returns).
 	local key = lp_key or "x"
 	local checkOk, checkResult = pcall(function()
 		return sdk:checkKey(key)
 	end)
 	if checkOk and type(checkResult) == "table" and checkResult.status == "VALID" and checkResult.data then
 		cachedAuth = checkResult.data
-		print("[GOAT Loader] checkKey VALID")
 		showWelcome()
 	elseif checkOk and type(checkResult) == "table" then
-		print("[GOAT Loader] checkKey:", checkResult.status, checkResult.message)
 		setStatus("GOAT Hub", tostring(checkResult.status or "Key check failed"))
-	else
-		print("[GOAT Loader] checkKey skipped/failed:", checkResult)
 	end
 
-	-- This call usually never returns — it runs your protected script.
-	local loadOk, loadErr = pcall(function()
+	local loadOk = pcall(function()
 		sdk:loadScript(key)
 	end)
 	if not loadOk then
 		setStatus("GOAT Hub", "Load failed")
-		warn("[GOAT Loader] loadScript error:", loadErr)
 		return false
 	end
 
-	print("[GOAT Loader] loadScript returned")
 	showWelcome()
 	return true
 end
