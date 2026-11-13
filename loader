@@ -1,7 +1,7 @@
 local prefix = ""
 
 if lp_key then
-    prefix = "local lp_key = '" .. lp_key .. "'\n"
+	prefix = "local lp_key = '" .. lp_key .. "'\n"
 end
 
 prefix = prefix .. [[
@@ -11,57 +11,285 @@ prefix = prefix .. [[
 local GameId = game.GameId
 
 local Scripts = {
-    [3989768869] = "60887533351036579318", -- TSG 
-    [4777817887] = "23487425834520961143", -- BB
-    [7326934954] = "36530871158949597907", -- 99
-    [113491250] = "69023828772129730861", -- PF
-    [5369242581] = "88512928415190764448", -- Dow
-    [111958650] = "63528363046657134572", -- arsenal
-    [5995470825] = "48794175449906367489", -- HyperShot
-    [9187332740] = "96418341488361702046", -- Strafe
-    [6035872082] = "70770555380354344965", -- Rivals
-    [6583326485] = "97149832134761200323", -- Groundwars
-    [6726637224] = "38051361310081996139", -- StreetLife
-    [97314177]   = "89066052075251198843", -- NinjaTycoon
-    [4730278139] = "46358056084884904300", -- UBG
-    [5200655965] = "05018654462611029174", -- Project Smash
-    [9807649116] = "43582573096609583474", -- Tactical Swat
-    [3258873704] = "81982446223044293233"  -- Skywars
+	[3989768869] = "60887533351036579318", -- TSG
+	[4777817887] = "23487425834520961143", -- BB
+	[7326934954] = "36530871158949597907", -- 99
+	[113491250] = "69023828772129730861", -- PF
+	[5369242581] = "88512928415190764448", -- Dow
+	[111958650] = "63528363046657134572", -- arsenal
+	[5995470825] = "48794175449906367489", -- HyperShot
+	[9187332740] = "96418341488361702046", -- Strafe
+	[6035872082] = "70770555380354344965", -- Rivals
+	[6583326485] = "97149832134761200323", -- Groundwars
+	[6726637224] = "38051361310081996139", -- StreetLife
+	[97314177] = "89066052075251198843", -- NinjaTycoon
+	[4730278139] = "46358056084884904300", -- UBG
+	[5200655965] = "05018654462611029174", -- Project Smash
+	[9807649116] = "43582573096609583474", -- Tactical Swat
+	[3258873704] = "81982446223044293233", -- Skywars
 }
 
+----------------------------------------------------------------
+-- Auth notice (bottom-left, GoatAuth Halloween palette)
+-- Shown after LuaProt auth + script load. Long linger.
+----------------------------------------------------------------
+local NOTICE_SECONDS = 12
+
+local function readLP(name, fallback)
+	local env = (getgenv and getgenv()) or _G
+	local value = env[name]
+	if value == nil and _G then
+		value = rawget(_G, name)
+	end
+	if value == nil then
+		return fallback
+	end
+	return value
+end
+
+local function resolveNoticeParent()
+	local ok, gui = pcall(function()
+		return gethui and gethui()
+	end)
+	if ok and gui then
+		return gui
+	end
+	local coreOk, coreGui = pcall(function()
+		return game:GetService("CoreGui")
+	end)
+	if coreOk and coreGui then
+		return coreGui
+	end
+	local lp = game:GetService("Players").LocalPlayer
+	return lp:WaitForChild("PlayerGui")
+end
+
+local function showAuthNotice()
+	-- Halloween / GoatAuth defaults (matches hub UI)
+	local bg = Color3.fromRGB(14, 12, 12)
+	local accent = Color3.fromRGB(255, 105, 0)
+	local outline = Color3.fromRGB(31, 31, 31)
+	local font = Color3.fromRGB(241, 235, 225)
+	local muted = font:Lerp(Color3.fromRGB(90, 85, 80), 0.45)
+
+	local scriptName = tostring(readLP("LP_SCRIPT_NAME", "GOAT Hub"))
+	local scriptVersion = tostring(readLP("LP_SCRIPT_VERSION", "1"))
+	local discord = tostring(readLP("LP_DISCORD_DISPLAY_NAME", nil) or readLP("LP_DISCORD", "unknown"))
+	local executions = tostring(readLP("LP_EXECUTIONS", "—"))
+	local sessionCount = tostring(readLP("LP_SESSION_COUNT", "—"))
+	local timeLeft = tonumber(readLP("LP_TIMELEFT", 0)) or 0
+	local expiry = (timeLeft == 0) and "Lifetime" or os.date("!%Y-%m-%d %H:%M UTC", os.time() + timeLeft)
+
+	local rows = {
+		{ label = "User", value = discord },
+		{ label = "Expires", value = expiry },
+		{ label = "Runs", value = executions },
+		{ label = "Online", value = sessionCount },
+	}
+
+	local parent = resolveNoticeParent()
+	local old = parent:FindFirstChild("GoatAuthNotice")
+	if old then
+		old:Destroy()
+	end
+
+	local gui = Instance.new("ScreenGui")
+	gui.Name = "GoatAuthNotice"
+	gui.IgnoreGuiInset = true
+	gui.ResetOnSpawn = false
+	gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+	gui.DisplayOrder = 100000
+	gui.Parent = parent
+
+	local shell = Instance.new("Frame")
+	shell.Name = "Shell"
+	shell.AnchorPoint = Vector2.new(0, 1)
+	shell.Position = UDim2.new(0, 14, 1, -14)
+	shell.Size = UDim2.fromOffset(292, 0)
+	shell.AutomaticSize = Enum.AutomaticSize.Y
+	shell.BackgroundColor3 = bg
+	shell.BackgroundTransparency = 0.08
+	shell.BorderSizePixel = 0
+	shell.Parent = gui
+
+	Instance.new("UICorner", shell).CornerRadius = UDim.new(0, 6)
+
+	local shellStroke = Instance.new("UIStroke")
+	shellStroke.Color = outline
+	shellStroke.Thickness = 1
+	shellStroke.Transparency = 0.15
+	shellStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+	shellStroke.Parent = shell
+
+	local accentBar = Instance.new("Frame")
+	accentBar.Name = "Accent"
+	accentBar.Size = UDim2.new(0, 2, 1, -10)
+	accentBar.Position = UDim2.fromOffset(6, 5)
+	accentBar.BackgroundColor3 = accent
+	accentBar.BorderSizePixel = 0
+	accentBar.Parent = shell
+	Instance.new("UICorner", accentBar).CornerRadius = UDim.new(1, 0)
+
+	local pad = Instance.new("UIPadding")
+	pad.PaddingTop = UDim.new(0, 10)
+	pad.PaddingBottom = UDim.new(0, 10)
+	pad.PaddingLeft = UDim.new(0, 16)
+	pad.PaddingRight = UDim.new(0, 12)
+	pad.Parent = shell
+
+	local list = Instance.new("UIListLayout")
+	list.FillDirection = Enum.FillDirection.Vertical
+	list.SortOrder = Enum.SortOrder.LayoutOrder
+	list.Padding = UDim.new(0, 6)
+	list.Parent = shell
+
+	local title = Instance.new("TextLabel")
+	title.LayoutOrder = 1
+	title.BackgroundTransparency = 1
+	title.Size = UDim2.new(1, 0, 0, 18)
+	title.Font = Enum.Font.GothamMedium
+	title.TextSize = 14
+	title.TextXAlignment = Enum.TextXAlignment.Left
+	title.TextColor3 = font
+	title.Text = string.format("%s  ·  v%s", scriptName, scriptVersion)
+	title.Parent = shell
+
+	local subtitle = Instance.new("TextLabel")
+	subtitle.LayoutOrder = 2
+	subtitle.BackgroundTransparency = 1
+	subtitle.Size = UDim2.new(1, 0, 0, 14)
+	subtitle.Font = Enum.Font.Gotham
+	subtitle.TextSize = 12
+	subtitle.TextXAlignment = Enum.TextXAlignment.Left
+	subtitle.TextColor3 = muted
+	subtitle.Text = "Authenticated"
+	subtitle.Parent = shell
+
+	local divider = Instance.new("Frame")
+	divider.LayoutOrder = 3
+	divider.Size = UDim2.new(1, 0, 0, 1)
+	divider.BackgroundColor3 = outline
+	divider.BackgroundTransparency = 0.25
+	divider.BorderSizePixel = 0
+	divider.Parent = shell
+
+	local fadeTargets = { title, subtitle }
+	for i, row in ipairs(rows) do
+		local line = Instance.new("Frame")
+		line.LayoutOrder = 3 + i
+		line.BackgroundTransparency = 1
+		line.Size = UDim2.new(1, 0, 0, 16)
+		line.Parent = shell
+
+		local key = Instance.new("TextLabel")
+		key.BackgroundTransparency = 1
+		key.Size = UDim2.new(0, 64, 1, 0)
+		key.Font = Enum.Font.Gotham
+		key.TextSize = 12
+		key.TextXAlignment = Enum.TextXAlignment.Left
+		key.TextColor3 = muted
+		key.Text = row.label
+		key.Parent = line
+
+		local value = Instance.new("TextLabel")
+		value.BackgroundTransparency = 1
+		value.Position = UDim2.fromOffset(68, 0)
+		value.Size = UDim2.new(1, -68, 1, 0)
+		value.Font = Enum.Font.GothamMedium
+		value.TextSize = 12
+		value.TextXAlignment = Enum.TextXAlignment.Left
+		value.TextColor3 = font
+		value.TextTruncate = Enum.TextTruncate.AtEnd
+		value.Text = row.value
+		value.Parent = line
+
+		table.insert(fadeTargets, key)
+		table.insert(fadeTargets, value)
+	end
+
+	local TweenService = game:GetService("TweenService")
+	shell.BackgroundTransparency = 1
+	shellStroke.Transparency = 1
+	accentBar.BackgroundTransparency = 1
+	divider.BackgroundTransparency = 1
+	for _, label in ipairs(fadeTargets) do
+		label.TextTransparency = 1
+	end
+	shell.Position = UDim2.new(0, 14, 1, 22)
+
+	local enterInfo = TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
+	TweenService:Create(shell, enterInfo, {
+		Position = UDim2.new(0, 14, 1, -14),
+		BackgroundTransparency = 0.08,
+	}):Play()
+	TweenService:Create(shellStroke, enterInfo, { Transparency = 0.15 }):Play()
+	TweenService:Create(accentBar, enterInfo, { BackgroundTransparency = 0 }):Play()
+	TweenService:Create(divider, enterInfo, { BackgroundTransparency = 0.25 }):Play()
+	for _, label in ipairs(fadeTargets) do
+		local goal = (label == subtitle) and 0.22 or 0
+		TweenService:Create(label, enterInfo, { TextTransparency = goal }):Play()
+	end
+
+	task.delay(NOTICE_SECONDS, function()
+		if not gui.Parent then
+			return
+		end
+		local exitInfo = TweenInfo.new(0.35, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+		TweenService:Create(shell, exitInfo, {
+			Position = UDim2.new(0, 14, 1, 18),
+			BackgroundTransparency = 1,
+		}):Play()
+		TweenService:Create(shellStroke, exitInfo, { Transparency = 1 }):Play()
+		TweenService:Create(accentBar, exitInfo, { BackgroundTransparency = 1 }):Play()
+		TweenService:Create(divider, exitInfo, { BackgroundTransparency = 1 }):Play()
+		for _, label in ipairs(fadeTargets) do
+			TweenService:Create(label, exitInfo, { TextTransparency = 1 }):Play()
+		end
+		task.wait(0.4)
+		if gui.Parent then
+			gui:Destroy()
+		end
+	end)
+end
+
 local function LoadScript()
-    local scriptId = Scripts[GameId]
-    
-    if not scriptId then
-        warn("No script ID found for game: " .. GameId)
-        return false
-    end
-    
-    local success, result = pcall(function()
-        print("Initializing LuaProt loader...")
-        print("Game ID: " .. GameId)
-        print("Script ID: " .. scriptId)
-        
-        local sdkSuccess, sdk = pcall(function()
-            return loadstring(game:HttpGet("https://sdk.luaprot.net/"))()
-        end)
-        
-        if not sdkSuccess then
-            error("Failed to load SDK: " .. tostring(sdk))
-        end
-        
-        sdk.scriptId = scriptId
-        return sdk:loadScript()
-    end)
-    
-    if success then
-        print("Successfully loaded script for game: " .. GameId)
-        return true
-    else
-        warn("Failed to load script: " .. tostring(result))
-        print("Full error: " .. tostring(result))
-        return false
-    end
+	local scriptId = Scripts[GameId]
+
+	if not scriptId then
+		warn("No script ID found for game: " .. GameId)
+		return false
+	end
+
+	local success, result = pcall(function()
+		print("Initializing LuaProt loader...")
+		print("Game ID: " .. GameId)
+		print("Script ID: " .. scriptId)
+
+		local sdkSuccess, sdk = pcall(function()
+			return loadstring(game:HttpGet("https://sdk.luaprot.net/"))()
+		end)
+
+		if not sdkSuccess then
+			error("Failed to load SDK: " .. tostring(sdk))
+		end
+
+		sdk.scriptId = scriptId
+		return sdk:loadScript()
+	end)
+
+	if success then
+		print("Successfully loaded script for game: " .. GameId)
+		-- LP_* runtime vars exist after auth; show notice once the script is in.
+		task.defer(function()
+			task.wait(0.2)
+			pcall(showAuthNotice)
+		end)
+		return true
+	else
+		warn("Failed to load script: " .. tostring(result))
+		print("Full error: " .. tostring(result))
+		return false
+	end
 end
 
 LoadScript()
