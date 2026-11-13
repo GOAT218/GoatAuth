@@ -1,10 +1,22 @@
 --[[
 	GOAT Hub — LuaProt Loader
-	Auth notice uses LP_CUSTOM_LOADER (docs require dashboard
-	notification style = "custom" for this to run).
-	https://docs.luaprot.net/luaprot/macro-documentation/custom-loading-ui
-	https://docs.luaprot.net/luaprot/macro-documentation/v3-runtime-variables
+
+	Why the old notice never showed:
+	  sdk:loadScript() runs your full script and never returns, so any
+	  code AFTER loadScript() never runs.
+
+	Correct flow (LuaProt docs):
+	  1) Set LP_CUSTOM_LOADER before loading (dashboard style must be "custom")
+	  2) Optionally sdk:checkKey() for welcome data before loadScript
+	  3) Then sdk:loadScript()
+
+	Docs:
+	  https://docs.luaprot.net/luaprot/macro-documentation/custom-loading-ui
+	  https://docs.luaprot.net/luaprot/macro-documentation/key-check-library
+	  https://docs.luaprot.net/luaprot/macro-documentation/v3-runtime-variables
 ]]
+
+print("[GOAT Loader] file loaded — if you don't see this, you're running an old copy")
 
 local prefix = ""
 if lp_key then
@@ -38,7 +50,6 @@ local Scripts = {
 	[3258873704] = "81982446223044293233", -- Skywars
 }
 
--- GoatAuth Halloween palette
 local Theme = {
 	Bg = Color3.fromRGB(14, 12, 12),
 	Accent = Color3.fromRGB(255, 105, 0),
@@ -49,6 +60,8 @@ Theme.Muted = Theme.Font:Lerp(Color3.fromRGB(90, 85, 80), 0.45)
 
 local NOTICE_SECONDS = 12
 local gui, shell, statusLabel, detailFolder
+local welcomeShown = false
+local cachedAuth = nil -- from checkKey
 
 local function noticeParent()
 	local ok, hui = pcall(function()
@@ -108,7 +121,6 @@ local function ensureShell()
 	shell.BackgroundTransparency = 0.06
 	shell.BorderSizePixel = 0
 	shell.Parent = gui
-
 	Instance.new("UICorner", shell).CornerRadius = UDim.new(0, 6)
 
 	local stroke = Instance.new("UIStroke")
@@ -164,7 +176,8 @@ end
 local function setStatus(text)
 	ensureShell()
 	clearDetails()
-	statusLabel.Text = text
+	statusLabel.Text = tostring(text)
+	print("[GOAT Loader]", text)
 end
 
 local function addRow(order, keyText, valueText)
@@ -192,24 +205,23 @@ local function addRow(order, keyText, valueText)
 	value.TextSize = 12
 	value.TextXAlignment = Enum.TextXAlignment.Left
 	value.TextColor3 = Theme.Font
-	value.Text = valueText
+	value.Text = tostring(valueText)
 	value.Parent = line
 end
 
 local function readLP(name)
-	-- Prefer direct globals (how LuaProt injects them), then getgenv.
-	local ok, value = pcall(function()
-		return getfenv()[name]
-	end)
-	if ok and value ~= nil then
-		return value
-	end
 	local env = getgenv and getgenv()
 	if env and env[name] ~= nil then
 		return env[name]
 	end
 	if _G and rawget(_G, name) ~= nil then
 		return rawget(_G, name)
+	end
+	local ok, value = pcall(function()
+		return getfenv()[name]
+	end)
+	if ok and value ~= nil then
+		return value
 	end
 	return nil
 end
@@ -222,16 +234,32 @@ local function formatExpiry(timeLeft)
 	return os.date("!%Y-%m-%d %H:%M UTC", os.time() + timeLeft)
 end
 
-local function showWelcome()
+local function showWelcome(extraSeconds)
+	if welcomeShown then
+		return
+	end
+	welcomeShown = true
 	ensureShell()
 	clearDetails()
 
 	local scriptName = tostring(readLP("LP_SCRIPT_NAME") or "GOAT Hub")
 	local scriptVersion = tostring(readLP("LP_SCRIPT_VERSION") or "1")
-	local discord = tostring(readLP("LP_DISCORD_DISPLAY_NAME") or readLP("LP_DISCORD") or "unknown")
-	local executions = tostring(readLP("LP_EXECUTIONS") or "—")
+	local discord = tostring(
+		readLP("LP_DISCORD_DISPLAY_NAME")
+			or readLP("LP_DISCORD")
+			or (cachedAuth and cachedAuth.discordUsername)
+			or "unknown"
+	)
+	local executions = tostring(
+		readLP("LP_EXECUTIONS")
+			or (cachedAuth and cachedAuth.keyExecutions)
+			or "—"
+	)
 	local sessions = tostring(readLP("LP_SESSION_COUNT") or "—")
-	local expiry = formatExpiry(readLP("LP_TIMELEFT"))
+	local expiry = formatExpiry(
+		readLP("LP_TIMELEFT")
+			or (cachedAuth and cachedAuth.expire)
+	)
 
 	statusLabel.Text = string.format("%s  ·  v%s", scriptName, scriptVersion)
 
@@ -243,10 +271,20 @@ local function showWelcome()
 	divider.BorderSizePixel = 0
 	divider.Parent = detailFolder
 
-	addRow(1, "User", discord)
-	addRow(2, "Expires", expiry)
-	addRow(3, "Runs", executions)
-	addRow(4, "Online", sessions)
+	if extraSeconds then
+		addRow(1, "Auth", string.format("%.2fs", extraSeconds))
+		addRow(2, "User", discord)
+		addRow(3, "Expires", expiry)
+		addRow(4, "Runs", executions)
+		addRow(5, "Online", sessions)
+	else
+		addRow(1, "User", discord)
+		addRow(2, "Expires", expiry)
+		addRow(3, "Runs", executions)
+		addRow(4, "Online", sessions)
+	end
+
+	print("[GOAT Loader] welcome notice shown for", NOTICE_SECONDS, "s")
 
 	task.delay(NOTICE_SECONDS, function()
 		if not (gui and gui.Parent and shell) then
@@ -261,79 +299,80 @@ local function showWelcome()
 		if gui and gui.Parent then
 			gui:Destroy()
 		end
-		gui, shell, statusLabel, detailFolder = nil, nil, nil, nil
 	end)
 end
 
---[[
-	LuaProt calls this when dashboard notification style is "custom":
-	  1 = attempting auth
-	  2 = connecting
-	  else = auth success, value is elapsed seconds
-]]
+-- Must be set BEFORE sdk:loadScript(). Dashboard notification style = "custom".
 getgenv().LP_CUSTOM_LOADER = function(stepOrTime)
 	if stepOrTime == 1 then
 		setStatus("Authenticating…")
 	elseif stepOrTime == 2 then
 		setStatus("Connecting to LuaProt…")
 	else
-		-- Auth finished. Runtime vars should be available now.
 		local seconds = tonumber(stepOrTime)
-		if seconds then
-			setStatus(string.format("Authenticated  ·  %.2fs", seconds))
-		else
-			setStatus("Authenticated")
-		end
+		setStatus(seconds and string.format("Authenticated  ·  %.2fs", seconds) or "Authenticated")
 		task.defer(function()
-			task.wait(0.05)
-			pcall(showWelcome)
+			showWelcome(seconds)
 		end)
 	end
 end
--- Also expose as a plain global for loaders that don't use getgenv.
 LP_CUSTOM_LOADER = getgenv().LP_CUSTOM_LOADER
 
 local function LoadScript()
 	local scriptId = Scripts[GameId]
 	if not scriptId then
-		warn("[GOAT] No script ID for GameId " .. tostring(GameId))
 		setStatus("No script for this game")
+		warn("[GOAT Loader] No script ID for GameId", GameId)
 		return false
 	end
 
-	local success, result = pcall(function()
-		print("[GOAT] LuaProt loader")
-		print("[GOAT] GameId:", GameId)
-		print("[GOAT] ScriptId:", scriptId)
+	-- Visible immediately so we know this file is the one running.
+	setStatus("Loading GOAT Hub…")
+	print("[GOAT Loader] GameId:", GameId)
+	print("[GOAT Loader] ScriptId:", scriptId)
 
-		local sdkSuccess, sdk = pcall(function()
-			return loadstring(game:HttpGet("https://sdk.luaprot.net/"))()
-		end)
-		if not sdkSuccess then
-			error("SDK load failed: " .. tostring(sdk))
-		end
-
-		sdk.scriptId = scriptId
-		-- LP_CUSTOM_LOADER must already be set (done above) before this call.
-		return sdk:loadScript()
+	local sdkSuccess, sdk = pcall(function()
+		return loadstring(game:HttpGet("https://sdk.luaprot.net/"))()
 	end)
-
-	if success then
-		print("[GOAT] Script loaded for", GameId)
-		-- Fallback if dashboard style isn't "custom" (LP_CUSTOM_LOADER never fires).
-		task.delay(1.25, function()
-			if gui and gui.Parent and detailFolder and #detailFolder:GetChildren() == 0 then
-				pcall(showWelcome)
-			elseif not (gui and gui.Parent) then
-				pcall(showWelcome)
-			end
-		end)
-		return true
+	if not sdkSuccess then
+		setStatus("SDK failed")
+		warn("[GOAT Loader] SDK error:", sdk)
+		return false
 	end
 
-	warn("[GOAT] Load failed:", result)
-	setStatus("Auth / load failed")
-	return false
+	sdk.scriptId = scriptId
+
+	-- Pull welcome data BEFORE loadScript (loadScript never returns).
+	local key = lp_key or "x"
+	local checkOk, checkResult = pcall(function()
+		return sdk:checkKey(key)
+	end)
+	if checkOk and type(checkResult) == "table" and checkResult.status == "VALID" and checkResult.data then
+		cachedAuth = checkResult.data
+		print("[GOAT Loader] checkKey VALID")
+		-- Show welcome now with checkKey data; LP_CUSTOM_LOADER may refine it later.
+		showWelcome()
+	elseif checkOk and type(checkResult) == "table" then
+		print("[GOAT Loader] checkKey:", checkResult.status, checkResult.message)
+		setStatus(tostring(checkResult.status or "Key check failed"))
+	else
+		print("[GOAT Loader] checkKey skipped/failed:", checkResult)
+	end
+
+	-- This call usually never returns — it runs your protected script.
+	local loadOk, loadErr = pcall(function()
+		sdk:loadScript(key)
+	end)
+	if not loadOk then
+		setStatus("Load failed")
+		warn("[GOAT Loader] loadScript error:", loadErr)
+		return false
+	end
+
+	-- Only reached if the protected script returns (rare).
+	print("[GOAT Loader] loadScript returned")
+	showWelcome()
+	return true
 end
 
 LoadScript()
