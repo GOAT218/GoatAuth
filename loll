@@ -305,19 +305,33 @@ local Library = {
 Library.PremiumUnlocked = false
 Library.PremiumControls = {}
 
+-- Always re-read LuaProt's flag. Do not trust a one-shot PremiumUnlocked flip.
 local function DetectLuaProtPremiumKey()
 	local Success, Premium = pcall(function()
 		return LP_PREMIUM
 	end)
 	if Success and type(Premium) == 'boolean' then
-		return Premium
+		return Premium == true
 	end
 	local EnvironmentSuccess, Environment = pcall(getgenv)
-	return EnvironmentSuccess and type(Environment) == 'table' and Environment.LP_PREMIUM == true
+	if EnvironmentSuccess and type(Environment) == 'table' and Environment.LP_PREMIUM == true then
+		return true
+	end
+	local OkGlobal, GlobalPremium = pcall(function()
+		return rawget(_G, 'LP_PREMIUM')
+	end)
+	return OkGlobal and GlobalPremium == true
+end
+
+function Library:IsPremiumKey()
+	local Live = DetectLuaProtPremiumKey()
+	self.PremiumUnlocked = Live
+	return Live
 end
 
 function Library:SetPremiumAccess(Unlocked)
-	Unlocked = Unlocked == true
+	-- Unlock only if LuaProt still says premium. Blocks Library:SetPremiumAccess(true) spoofing.
+	Unlocked = Unlocked == true and DetectLuaProtPremiumKey()
 	if self.PremiumUnlocked and not Unlocked then
 		for _, Control in ipairs(self.PremiumControls) do
 			if Control.Type == 'Toggle' and Control.Value then
@@ -336,6 +350,15 @@ Library:SetPremiumAccess(DetectLuaProtPremiumKey())
 
 function Library:SetPremiumPurchaseURL(Url)
 	self.PremiumPurchaseURL = type(Url) == 'string' and Url or nil
+end
+
+-- Wrap premium feature logic (loops/hooks), not only the UI toggle.
+function Library:RunIfPremium(FeatureName, Callback, ...)
+	if self:IsPremiumKey() then
+		return true, Callback(...)
+	end
+	self:ShowPremiumPrompt(FeatureName or 'This feature')
+	return false, nil
 end
 
 function Library:ShowPremiumPrompt(FeatureName)
@@ -411,7 +434,13 @@ function Library:ShowPremiumPrompt(FeatureName)
 end
 
 function Library:CanUsePremium(Control)
-	if not Control.Premium or self.PremiumUnlocked then return true end
+	if not Control or not Control.Premium then
+		return true
+	end
+	-- Live check every click — PremiumUnlocked alone is not enough.
+	if self:IsPremiumKey() then
+		return true
+	end
 	self:ShowPremiumPrompt(Control.PremiumName)
 	return false
 end
@@ -3092,8 +3121,9 @@ do
         end;
 
         function Toggle:SetValue(Bool)
-            if not Library:CanUsePremium(Toggle) then return false end
             Bool = (not not Bool);
+            -- Only gate turning ON; free users must still be able to turn premium toggles off.
+            if Bool and not Library:CanUsePremium(Toggle) then return false end
             Toggle.Value = Bool;
             Toggle:Display();
 
@@ -7292,4 +7322,3 @@ function Library:Loader(Config)
 end
 
 return Library
-
