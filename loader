@@ -41,15 +41,16 @@ for _, g in ipairs(Games) do
 	end
 end
 
+-- UE theme (GoatAuth ThemeManager): Main 181818 / Accent 4777b6 / Outline 1f1f1f / Font ffffff
 local Theme = {
-	Bg = Color3.fromRGB(14, 12, 12),
-	Panel = Color3.fromRGB(20, 17, 16),
-	Input = Color3.fromRGB(28, 24, 22),
-	Accent = Color3.fromRGB(255, 105, 0),
-	AccentDim = Color3.fromRGB(180, 72, 0),
-	Outline = Color3.fromRGB(42, 36, 32),
-	Font = Color3.fromRGB(241, 235, 225),
-	Muted = Color3.fromRGB(160, 150, 140),
+	Bg = Color3.fromHex("141414"),
+	Panel = Color3.fromHex("181818"),
+	Input = Color3.fromRGB(28, 28, 30),
+	Accent = Color3.fromHex("4777b6"),
+	AccentDim = Color3.fromRGB(55, 95, 150),
+	Outline = Color3.fromHex("1f1f1f"),
+	Font = Color3.fromHex("ffffff"),
+	Muted = Color3.fromRGB(170, 176, 186),
 	Danger = Color3.fromRGB(220, 70, 55),
 	Ok = Color3.fromRGB(90, 180, 110),
 }
@@ -57,15 +58,16 @@ local Theme = {
 local NOTICE_SECONDS = 7
 local CARD_W = 320
 local CARD_H = 64
-local AVATAR = 40
 local BAR = 3
+-- Square box flush against the accent bar (full card height minus inset).
+local AVATAR_BOX = CARD_H - 4
 
--- Halloween scheme from GoatAuth ThemeManager (Linoria SpawnNotify structure — do NOT load Library).
+-- UE scheme from GoatAuth ThemeManager (Linoria SpawnNotify structure — do NOT load Library).
 local NotifyTheme = {
-	FontColor = Color3.fromHex("f1ebe1"),
-	MutedColor = Color3.fromRGB(160, 150, 140),
-	MainColor = Color3.fromHex("140f0d"),
-	AccentColor = Color3.fromHex("ff6900"),
+	FontColor = Color3.fromHex("ffffff"),
+	MutedColor = Color3.fromRGB(170, 176, 186),
+	MainColor = Color3.fromHex("181818"),
+	AccentColor = Color3.fromHex("4777b6"),
 	OutlineColor = Color3.fromHex("1f1f1f"),
 	Font = Enum.Font.Code,
 	FontSize = 14,
@@ -279,14 +281,12 @@ local function loadAvatar(image, url)
 	url = tostring(url or "")
 	if url == "" or url == "nil" then
 		image.Image = ""
-		image.Visible = false
 		return
 	end
-	image.Visible = true
 	-- Prefer download → getcustomasset (LuaProt docs); fall back to raw URL.
 	task.spawn(function()
 		local applied = false
-		if writefile and getcustomasset and isfile then
+		if writefile and getcustomasset then
 			local path = "goat_hub_discord_pfp.png"
 			local okGet, body = pcall(function()
 				return game:HttpGet(url)
@@ -401,26 +401,34 @@ local function ensureCard()
 	accent.ZIndex = 104
 	accent.Parent = outer
 
+	-- Box area right beside the accent line for the Discord avatar.
+	local avatarBox = Instance.new("Frame")
+	avatarBox.Name = "AvatarBox"
+	avatarBox.BackgroundColor3 = darkerColor(NotifyTheme.MainColor)
+	avatarBox.BorderSizePixel = 0
+	avatarBox.Position = UDim2.new(0, BAR, 0, 0)
+	avatarBox.Size = UDim2.new(0, AVATAR_BOX, 1, 0)
+	avatarBox.ClipsDescendants = true
+	avatarBox.ZIndex = 103
+	avatarBox.Parent = fill
+	local avatarBoxStroke = Instance.new("UIStroke")
+	avatarBoxStroke.Color = NotifyTheme.OutlineColor
+	avatarBoxStroke.Thickness = 1
+	avatarBoxStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+	avatarBoxStroke.Parent = avatarBox
+
 	local avatar = Instance.new("ImageLabel")
 	avatar.Name = "Avatar"
-	avatar.BackgroundColor3 = darkerColor(NotifyTheme.MainColor)
+	avatar.BackgroundTransparency = 1
 	avatar.BorderSizePixel = 0
-	avatar.Position = UDim2.new(0, BAR + 8, 0.5, -AVATAR / 2)
-	avatar.Size = UDim2.new(0, AVATAR, 0, AVATAR)
+	avatar.Position = UDim2.new(0, 0, 0, 0)
+	avatar.Size = UDim2.new(1, 0, 1, 0)
 	avatar.Image = ""
 	avatar.ScaleType = Enum.ScaleType.Crop
-	avatar.Visible = false
-	avatar.ZIndex = 103
-	avatar.Parent = fill
-	local avatarCorner = Instance.new("UICorner")
-	avatarCorner.CornerRadius = UDim.new(0, 4)
-	avatarCorner.Parent = avatar
-	local avatarStroke = Instance.new("UIStroke")
-	avatarStroke.Color = NotifyTheme.OutlineColor
-	avatarStroke.Thickness = 1
-	avatarStroke.Parent = avatar
+	avatar.ZIndex = 104
+	avatar.Parent = avatarBox
 
-	local textLeft = BAR + 10
+	local textLeft = BAR + AVATAR_BOX + 10
 	local title = Instance.new("TextLabel")
 	title.Name = "Title"
 	title.BackgroundTransparency = 1
@@ -477,6 +485,7 @@ local function ensureCard()
 		gui = gui,
 		outer = outer,
 		fill = fill,
+		avatarBox = avatarBox,
 		avatar = avatar,
 		title = title,
 		account = account,
@@ -490,20 +499,6 @@ local function ensureCard()
 	end)
 	notice.opened = true
 	return notice
-end
-
-local function layoutForAvatar(show)
-	if not notice then
-		return
-	end
-	local left = show and (BAR + 8 + AVATAR + 10) or (BAR + 10)
-	notice.avatar.Visible = show == true
-	notice.title.Position = UDim2.new(0, left, 0, 8)
-	notice.title.Size = UDim2.new(1, -(left + 10), 0, 18)
-	notice.account.Position = UDim2.new(0, left, 0, 26)
-	notice.account.Size = UDim2.new(1, -(left + 10), 0, 14)
-	notice.meta.Position = UDim2.new(0, left, 0, 42)
-	notice.meta.Size = UDim2.new(1, -(left + 10), 0, 14)
 end
 
 local function updateCard(opts)
@@ -521,13 +516,12 @@ local function updateCard(opts)
 		card.meta.Text = tostring(opts.meta)
 	end
 
+	-- Avatar always lives in the box beside the accent bar; fill when URL is known.
 	if opts.avatarUrl ~= nil then
 		local url = tostring(opts.avatarUrl)
-		if url ~= "" then
-			layoutForAvatar(true)
+		if url ~= "" and url ~= "nil" then
 			loadAvatar(card.avatar, url)
 		else
-			layoutForAvatar(false)
 			card.avatar.Image = ""
 		end
 	end
