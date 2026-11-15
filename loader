@@ -13,7 +13,7 @@ local LOGO_IMAGE = "rbxassetid://120910636292753"
 -- Catalog from https://goathub.lat/games (Id = universe / game.GameId)
 local Games = {
 	{ Id = 6035872082, Place = 17625359962, Name = "Rivals", Script = "70770555380354344965", Playing = 155515 },
-    { Id = 102871156420149, Place = 7935634976, Name = "Lost Front", Script = "59964054702423901643", Playing = 3275 },
+    { Id = 7935634976, Place = 102871156420149, Name = "The Lost Front", Script = "59964054702423901643", Playing = 3275 },
 	{ Id = 7326934954, Place = 79546208627805, Name = "99 Nights in the Forest", Script = "36530871158949597907", Playing = 117422 },
 	{ Id = 5995470825, Place = 17516596118, Name = "Hypershot", Script = "48794175449906367489", Playing = 19590 },
 	{ Id = 4777817887, Place = 13772394625, Name = "Blade Ball", Script = "23487425834520961143", Playing = 14363 },
