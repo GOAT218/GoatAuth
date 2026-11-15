@@ -13,6 +13,7 @@ local LOGO_IMAGE = "rbxassetid://120910636292753"
 -- Catalog from https://goathub.lat/games (Id = universe / game.GameId)
 local Games = {
 	{ Id = 6035872082, Place = 17625359962, Name = "Rivals", Script = "70770555380354344965", Playing = 155515 },
+    { Id = 7935634976, Place = 102871156420149, Name = "Lost Front", Script = "59964054702423901643", Playing = 3275 },
 	{ Id = 7326934954, Place = 79546208627805, Name = "99 Nights in the Forest", Script = "36530871158949597907", Playing = 117422 },
 	{ Id = 5995470825, Place = 17516596118, Name = "Hypershot", Script = "48794175449906367489", Playing = 19590 },
 	{ Id = 4777817887, Place = 13772394625, Name = "Blade Ball", Script = "23487425834520961143", Playing = 14363 },
@@ -23,12 +24,12 @@ local Games = {
 	{ Id = 113491250, Place = 292439477, Name = "Phantom Forces", Script = "69023828772129730861", Playing = 2519 },
 	{ Id = 9807649116, Place = 102837194624695, Name = "Tactical: Swat Simulator", Script = "43582573096609583474", Playing = 2045 },
 	{ Id = 807930589, Place = 2317712696, Name = "The Wild West", Script = nil, Playing = 1632 },
-	{ Id = 3258873704, Place = 8542259458, Name = "SkyWars", Script = "81982446223044293233", Playing = 952 },
-	{ Id = 5200655965, Place = 15092647980, Name = "Project Smash", Script = "05018654462611029174", Playing = 693 },
-	{ Id = 97314177, Place = 221718525, Name = "Ninja Tycoon", Script = "89066052075251198843", Playing = 623 },
-	{ Id = 9187332740, Place = 109020905733214, Name = "STRAFE FPS", Script = "96418341488361702046", Playing = 514 },
-	{ Id = 3989768869, Place = 11156779721, Name = "The Survival Game", Script = "60887533351036579318", Playing = 413 },
-	{ Id = 5369242581, Place = 15555246249, Name = "Dogs of War", Script = "88512928415190764448", Playing = 293 },
+	{ Id = 3258873704, Place = 8542259458, Name = "SkyWars", Script = "81982446223044293233", Playing = 1952 },
+	{ Id = 5200655965, Place = 15092647980, Name = "Project Smash", Script = "05018654462611029174", Playing = 1693 },
+	{ Id = 97314177, Place = 221718525, Name = "Ninja Tycoon", Script = "89066052075251198843", Playing = 2187 },
+	{ Id = 9187332740, Place = 109020905733214, Name = "STRAFE FPS", Script = "96418341488361702046", Playing = 2514 },
+	{ Id = 3989768869, Place = 11156779721, Name = "The Survival Game", Script = "60887533351036579318", Playing = 1413 },
+	{ Id = 5369242581, Place = 15555246249, Name = "Dogs of War", Script = "88512928415190764448", Playing = 1293 },
 }
 
 local Scripts = {}
