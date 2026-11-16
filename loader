@@ -23,7 +23,7 @@ local Games = {
 	{ Id = 6726637224, Place = 71600459831333, Name = "Street Life Remastered", Script = "38051361310081996139", Playing = 2798 },
 	{ Id = 113491250, Place = 292439477, Name = "Phantom Forces", Script = "69023828772129730861", Playing = 2519 },
 	{ Id = 9807649116, Place = 102837194624695, Name = "Tactical: Swat Simulator", Script = "43582573096609583474", Playing = 2045 },
-	{ Id = 807930589, Place = 2317712696, Name = "The Wild West", Script = nil, Playing = 1632 },
+	{ Id = 807930589, Place = 2317712696, Name = "The Wild West", Script = "13746182053885141707", Playing = 1632 },
 	{ Id = 3258873704, Place = 8542259458, Name = "SkyWars", Script = "81982446223044293233", Playing = 952 },
 	{ Id = 5200655965, Place = 15092647980, Name = "Project Smash", Script = "05018654462611029174", Playing = 693 },
 	{ Id = 97314177, Place = 221718525, Name = "Ninja Tycoon", Script = "89066052075251198843", Playing = 623 },
